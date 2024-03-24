@@ -1,6 +1,6 @@
 up: clippy build
 	docker compose up -d
-	sleep 1
+	sleep 5
 	sqlx migrate run
 	docker compose logs -f
 
@@ -19,5 +19,12 @@ infra:
 migrate:
 	sqlx migrate run
 
+redis:
+	redis-cli
+
+postgres:
+	psql --host=localhost --dbname=default --username=root --password
+
 deps:
 	cargo install sqlx-cli
+	sudo apt install -y postgresql-client redis-tools

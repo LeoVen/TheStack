@@ -7,29 +7,56 @@ services:
     networks:
       - subnet_1
     env_file:
-      - .env
+      - path: .env
+        required: true
     environment:
       - CACHE_REDIS_HOST=redis
-      - DATABASE_POSTGRES_HOST=dbpg
+      - DATABASE_POSTGRES_HOST=appdb
     depends_on:
-      - dbpg
+      - appdb
       - redis
-
-  dbpg:
-    build:
-      context: ./docker/postgresql
-    ports:
-      - 5432:5432
-    env_file:
-      - .env
-    networks:
-      - subnet_1
 
   redis:
     build:
       context: ./docker/redis
     ports:
       - "6379:6379"
+    networks:
+      - subnet_1
+
+  appdb:
+    build:
+      context: ./docker/postgresql
+    ports:
+      - 5432:5432
+    env_file:
+      - path: .env
+        required: true
+    networks:
+      - subnet_1
+
+  kcdb:
+    build:
+      context: ./docker/postgresql
+    ports:
+      - 5433:5432
+    env_file:
+      - path: .env
+        required: true
+    networks:
+      - subnet_1
+
+  keycloak:
+    build:
+      context: ./docker/keycloak
+    command: start-dev
+    env_file:
+      - path: .env
+        required: true
+    ports:
+      - 8080:8080
+    depends_on:
+      - kcdb
     networks:
       - subnet_1
 
