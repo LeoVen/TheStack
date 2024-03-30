@@ -1,1 +1,1 @@
-pub mod spell;
+pub mod coupon;

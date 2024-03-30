@@ -1,3 +1,5 @@
+pub mod coupon;
+
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 use sqlx::{

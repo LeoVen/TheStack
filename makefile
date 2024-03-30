@@ -1,4 +1,4 @@
-up: clippy build
+up: clippy format build
 	docker compose up -d
 	sleep 5
 	sqlx migrate run
@@ -9,6 +9,9 @@ build:
 
 clippy:
 	cargo clippy --fix --allow-dirty --allow-staged -- -D warnings
+
+format:
+	cargo fmt
 
 down:
 	docker compose down

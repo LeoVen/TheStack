@@ -1,3 +1,5 @@
+pub mod coupon;
+
 use anyhow::{Context, Result};
 use redis::{aio::MultiplexedConnection, ConnectionAddr, ConnectionInfo, RedisConnectionInfo};
 use serde::{Deserialize, Serialize};
