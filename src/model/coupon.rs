@@ -1,5 +1,7 @@
-use redis_macros::{FromRedisValue, ToRedisArgs};
-use serde::{Deserialize, Serialize};
+use redis_macros::FromRedisValue;
+use redis_macros::ToRedisArgs;
+use serde::Deserialize;
+use serde::Serialize;
 use sqlx::FromRow;
 use uuid::Uuid;
 
@@ -8,6 +10,12 @@ pub struct CouponSet {
     pub id: i64,
     pub name: String,
     pub created_at: chrono::DateTime<chrono::Utc>,
+}
+
+impl CouponSet {
+    pub fn redis_key(id: i64) -> String {
+        format!("thestack::coupons::{}", id)
+    }
 }
 
 #[derive(Serialize, Deserialize, FromRow, Clone, FromRedisValue, ToRedisArgs)]

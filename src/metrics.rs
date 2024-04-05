@@ -1,5 +1,8 @@
 use anyhow::Result;
-use prometheus::{Counter, Opts};
+use prometheus::Counter;
+use prometheus::Histogram;
+use prometheus::HistogramOpts;
+use prometheus::Opts;
 
 #[derive(Clone)]
 pub struct Metrics {
@@ -10,6 +13,8 @@ pub struct Metrics {
 
     pub cache_hit: Counter,
     pub cache_miss: Counter,
+
+    pub req_elapsed: Histogram,
 }
 
 #[tracing::instrument]
@@ -30,6 +35,10 @@ pub fn setup(env: &str) -> Result<Metrics> {
     r.register(Box::new(cache_hit.clone()))?;
     r.register(Box::new(cache_miss.clone()))?;
 
+    let req_elapsed =
+        Histogram::with_opts(HistogramOpts::new("req_elapsed", "Request elapsed time"))?;
+    r.register(Box::new(req_elapsed.clone()))?;
+
     tracing::info!("Metrics setup finished");
 
     Ok(Metrics {
@@ -39,5 +48,6 @@ pub fn setup(env: &str) -> Result<Metrics> {
         api_5xx,
         cache_hit,
         cache_miss,
+        req_elapsed,
     })
 }

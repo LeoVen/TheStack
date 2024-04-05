@@ -1,4 +1,6 @@
-use redis::{aio::MultiplexedConnection, AsyncCommands, RedisResult};
+use redis::aio::MultiplexedConnection;
+use redis::AsyncCommands;
+use redis::RedisResult;
 
 use crate::model::coupon::Coupon;
 

@@ -1,12 +1,15 @@
 pub mod coupon;
 
-use anyhow::{Context, Result};
-use serde::{Deserialize, Serialize};
-use sqlx::{
-    postgres::{PgConnectOptions, PgPoolOptions},
-    Pool, Postgres,
-};
-use tokio_retry::{strategy::FixedInterval, Retry};
+use anyhow::Context;
+use anyhow::Result;
+use serde::Deserialize;
+use serde::Serialize;
+use sqlx::postgres::PgConnectOptions;
+use sqlx::postgres::PgPoolOptions;
+use sqlx::Pool;
+use sqlx::Postgres;
+use tokio_retry::strategy::FixedInterval;
+use tokio_retry::Retry;
 
 #[derive(Serialize, Deserialize, Debug)]
 struct DatabasePostgresConfig {

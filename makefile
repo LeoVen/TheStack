@@ -11,7 +11,7 @@ clippy:
 	cargo clippy --fix --allow-dirty --allow-staged -- -D warnings
 
 format:
-	cargo fmt
+	cargo +nightly fmt
 
 down:
 	docker compose down

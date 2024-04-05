@@ -1,8 +1,9 @@
-use axum::{
-    http::StatusCode,
-    response::{IntoResponse, Response},
-};
+use axum::http::StatusCode;
+use axum::response::IntoResponse;
+use axum::response::Response;
 use serde::Serialize;
+
+use crate::error::service::ServiceError;
 
 pub type ApiResult<T> = Result<T, ApiError>;
 
@@ -45,6 +46,16 @@ impl IntoResponse for ApiError {
 
                 (StatusCode::NOT_FOUND, ResponseBody::from("Not Found")).into_response()
             }
+        }
+    }
+}
+
+impl From<ServiceError> for ApiError {
+    fn from(err: ServiceError) -> Self {
+        let err = err;
+        match err {
+            ServiceError::NotFound => ApiError::NotFound("Not Found".to_string()),
+            ServiceError::Internal(err) => ApiError::Internal(err),
         }
     }
 }

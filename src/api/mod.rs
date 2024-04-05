@@ -1,13 +1,22 @@
 pub mod coupon;
 pub mod metrics;
 
-use std::net::{Ipv4Addr, SocketAddrV4};
+use std::net::Ipv4Addr;
+use std::net::SocketAddrV4;
+use std::time::Duration;
 
-use anyhow::{Context, Result};
-use axum::{body::Body, extract::MatchedPath, http::Request, response::Response, Router};
+use anyhow::Context;
+use anyhow::Result;
+use axum::body::Body;
+use axum::extract::MatchedPath;
+use axum::http::Request;
+use axum::response::Response;
+use axum::Router;
 use redis::aio::MultiplexedConnection;
-use serde::{Deserialize, Serialize};
-use sqlx::{Pool, Postgres};
+use serde::Deserialize;
+use serde::Serialize;
+use sqlx::Pool;
+use sqlx::Postgres;
 use tower_http::trace::TraceLayer;
 
 use crate::metrics::Metrics;
@@ -25,8 +34,8 @@ pub struct AppState {
     pub metrics: Metrics,
 }
 
-#[tracing::instrument(skip(state))]
-pub async fn setup(env: &str, state: AppState) -> Result<()> {
+#[tracing::instrument(skip(ctx))]
+pub async fn setup(env: &str, ctx: AppState) -> Result<()> {
     let config = envy::from_env::<AxumApiConfig>().context("Failed to get env vars")?;
 
     if env == "dev" {
@@ -34,7 +43,7 @@ pub async fn setup(env: &str, state: AppState) -> Result<()> {
         tracing::info!(config = config_str);
     }
 
-    let metrics = state.metrics.clone();
+    let metrics = ctx.metrics.clone();
     let trace_layer = TraceLayer::new_for_http()
         .make_span_with(|request: &Request<Body>| {
             let matched_path = request
@@ -52,8 +61,10 @@ pub async fn setup(env: &str, state: AppState) -> Result<()> {
             metrics.api_count.inc();
         })
         .on_response(
-            move |response: &Response<Body>, _duration, _span: &tracing::Span| {
+            move |response: &Response<Body>, duration: Duration, _span: &tracing::Span| {
                 let status = response.status();
+
+                metrics.req_elapsed.observe(duration.as_secs_f64());
 
                 if status.is_success() {
                     metrics.api_2xx.inc();
@@ -65,7 +76,7 @@ pub async fn setup(env: &str, state: AppState) -> Result<()> {
             },
         );
 
-    let coupons = coupon::router(state.clone()).layer(trace_layer.clone());
+    let coupons = coupon::router(ctx.clone()).layer(trace_layer.clone());
     let metrics = metrics::router();
 
     let app = Router::new().merge(metrics).merge(coupons);

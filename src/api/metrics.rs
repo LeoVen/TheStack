@@ -1,7 +1,8 @@
 use axum::Router;
-use prometheus::{Encoder, TextEncoder};
+use prometheus::Encoder;
+use prometheus::TextEncoder;
 
-use crate::error::ApiResult;
+use crate::error::api::ApiResult;
 
 pub fn router() -> Router {
     Router::new().route("/metrics", axum::routing::get(metrics))

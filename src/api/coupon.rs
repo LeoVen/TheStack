@@ -1,22 +1,22 @@
 use std::sync::Arc;
 
-use axum::{
-    extract::{Path, State},
-    Json, Router,
-};
+use axum::extract::Path;
+use axum::extract::State;
+use axum::Json;
+use axum::Router;
 
-use crate::{
-    api::AppState, cache::coupon::CouponCache, database::coupon::CouponRepository,
-    error::ApiResult, metrics::Metrics, model::coupon::Coupon,
-};
+use crate::api::AppState;
+use crate::cache::coupon::CouponCache;
+use crate::database::coupon::CouponRepository;
+use crate::error::api::ApiResult;
+use crate::model::coupon::Coupon;
+use crate::service::coupon::CouponService;
 
 struct CouponAppState {
-    cache: CouponCache,
-    repo: CouponRepository,
-    metrics: Metrics,
+    coupons: CouponService,
 }
 
-pub fn router(app_state: AppState) -> Router {
+pub fn router(ctx: AppState) -> Router {
     Router::<Arc<CouponAppState>>::new()
         .route(
             "/coupon_set/:set_id/coupons",
@@ -28,9 +28,10 @@ pub fn router(app_state: AppState) -> Router {
         )
         .with_state(
             (CouponAppState {
-                cache: CouponCache::new(app_state.cache),
-                metrics: app_state.metrics,
-                repo: CouponRepository::new(app_state.db),
+                coupons: CouponService::new(
+                    CouponRepository::new(ctx.db),
+                    CouponCache::new(ctx.cache),
+                ),
             })
             .into(),
         )
@@ -41,8 +42,7 @@ async fn get_by_coupon_set_id(
     State(ctx): State<Arc<CouponAppState>>,
     Path(set_id): Path<i64>,
 ) -> ApiResult<Json<Vec<Coupon>>> {
-    let values = ctx.repo.get_by_set(set_id).await?;
-
+    let values = ctx.coupons.get_by_set(set_id).await?;
     Ok(Json(values))
 }
 
@@ -51,6 +51,6 @@ async fn pop_coupon(
     State(ctx): State<Arc<CouponAppState>>,
     Path(set_id): Path<i64>,
 ) -> ApiResult<Json<Coupon>> {
-    let value = ctx.repo.pop_coupon(set_id).await?;
+    let value = ctx.coupons.pop_coupon(set_id).await?;
     Ok(Json(value))
 }

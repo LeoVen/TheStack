@@ -1,8 +1,13 @@
 pub mod coupon;
 
-use anyhow::{Context, Result};
-use redis::{aio::MultiplexedConnection, ConnectionAddr, ConnectionInfo, RedisConnectionInfo};
-use serde::{Deserialize, Serialize};
+use anyhow::Context;
+use anyhow::Result;
+use redis::aio::MultiplexedConnection;
+use redis::ConnectionAddr;
+use redis::ConnectionInfo;
+use redis::RedisConnectionInfo;
+use serde::Deserialize;
+use serde::Serialize;
 
 #[derive(Serialize, Deserialize, Debug)]
 struct RedisConfig {
