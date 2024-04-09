@@ -23,12 +23,13 @@ impl CouponRepository {
         Ok(result)
     }
 
-    pub async fn pop_coupon(&self, set_id: i64) -> DatabaseResult<Coupon> {
+    pub async fn pop_coupons(&self, set_id: i64, limit: i64) -> DatabaseResult<Vec<Coupon>> {
         let result = sqlx::query_as(
-        "with pop as (delete from coupon where id in (select id from coupon where set_id = $1 limit 1) returning *) select * from pop",
+        "with pop as (delete from coupon where id in (select id from coupon where set_id = $1 limit $2) returning *) select * from pop",
         )
         .bind(set_id)
-        .fetch_one(&self.conn)
+        .bind(limit)
+        .fetch_all(&self.conn)
         .await?;
 
         Ok(result)

@@ -13,8 +13,12 @@ pub struct CouponSet {
 }
 
 impl CouponSet {
-    pub fn redis_key(id: i64) -> String {
+    pub fn set_key(id: i64) -> String {
         format!("thestack::coupons::{}", id)
+    }
+
+    pub fn used_key(id: i64) -> String {
+        format!("thestack::used::{}", id)
     }
 }
 

@@ -9,7 +9,7 @@ create table if not exists coupon_set (
 );
 
 create table if not exists coupon (
-    "id" uuid default gen_random_uuid(),
+    "id" uuid default gen_random_uuid(), -- UUID v4
     "set_id" bigserial,
 
     "used" boolean default false,
