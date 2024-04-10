@@ -8,29 +8,28 @@ use axum::Router;
 use crate::api::AppState;
 use crate::cache::coupon::CouponCache;
 use crate::database::coupon::CouponRepository;
+use crate::error::api::ApiError;
 use crate::error::api::ApiResult;
 use crate::model::coupon::Coupon;
 use crate::service::coupon::CouponService;
 
 struct CouponAppState {
-    coupons: CouponService,
+    service: CouponService,
 }
 
 pub fn router(ctx: AppState) -> Router {
     Router::<Arc<CouponAppState>>::new()
+        .route("/coupon_set/:set_id/coupon", axum::routing::get(pop_coupon))
         .route(
-            "/coupon_set/:set_id/coupons",
-            axum::routing::get(get_by_coupon_set_id),
-        )
-        .route(
-            "/coupon_set/:set_id/coupons/fetch",
-            axum::routing::get(pop_coupon),
+            "/coupon_set/:set_id/upload",
+            axum::routing::post(upload_coupons),
         )
         .with_state(
             (CouponAppState {
-                coupons: CouponService::new(
+                service: CouponService::new(
                     CouponRepository::new(ctx.db),
                     CouponCache::new(ctx.cache),
+                    ctx.metrics.clone(),
                 ),
             })
             .into(),
@@ -38,19 +37,25 @@ pub fn router(ctx: AppState) -> Router {
 }
 
 #[tracing::instrument(skip_all)]
-async fn get_by_coupon_set_id(
-    State(ctx): State<Arc<CouponAppState>>,
-    Path(set_id): Path<i64>,
-) -> ApiResult<Json<Vec<Coupon>>> {
-    let values = ctx.coupons.get_by_set(set_id).await?;
-    Ok(Json(values))
-}
-
-#[tracing::instrument(skip_all)]
 async fn pop_coupon(
     State(ctx): State<Arc<CouponAppState>>,
     Path(set_id): Path<i64>,
 ) -> ApiResult<Json<Coupon>> {
-    let value = ctx.coupons.pop_coupon(set_id).await?;
+    let value = ctx.service.pop_coupon(set_id).await?;
     Ok(Json(value))
+}
+
+#[tracing::instrument(skip_all)]
+async fn upload_coupons(
+    State(ctx): State<Arc<CouponAppState>>,
+    Path(set_id): Path<i64>,
+    Json(coupons): Json<Vec<String>>,
+) -> ApiResult<()> {
+    if coupons.is_empty() {
+        return Err(ApiError::BadRequest("Empty coupon list".to_string()));
+    }
+
+    ctx.service.spawn_upload_job(set_id, coupons).await;
+
+    Ok(())
 }

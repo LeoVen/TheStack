@@ -38,12 +38,6 @@ impl CouponCache {
         Ok(())
     }
 
-    pub async fn get_by_id(&mut self, id: i64) -> CacheResult<Option<String>> {
-        let result: Option<Vec<String>> = self.conn.get(Coupon::redis_key(id)).await?;
-
-        Ok(result.and_then(|v| v.into_iter().next()))
-    }
-
     pub async fn pop_coupon(&mut self, set_id: i64) -> CacheResult<Option<String>> {
         let result = self
             .conn

@@ -20,19 +20,16 @@ impl CouponSet {
     pub fn used_key(id: i64) -> String {
         format!("thestack::used::{}", id)
     }
+
+    pub fn used_key_prefix() -> &'static str {
+        "thestack::used::*"
+    }
 }
 
 #[derive(Serialize, Deserialize, FromRow, Clone, FromRedisValue, ToRedisArgs)]
 pub struct Coupon {
     pub id: Uuid,
     pub set_id: i64,
-    pub used: bool,
-}
-
-impl Coupon {
-    pub fn redis_key(id: i64) -> String {
-        format!("thestack:coupons:{}", id)
-    }
 }
 
 #[derive(Serialize, Deserialize, FromRow, Clone, FromRedisValue, ToRedisArgs)]

@@ -15,6 +15,11 @@ pub struct Metrics {
     pub cache_miss: Counter,
 
     pub req_elapsed: Histogram,
+
+    pub job_cleanup: Counter,
+    pub job_upload: Counter,
+
+    pub batch_inserts: Counter,
 }
 
 #[tracing::instrument]
@@ -39,6 +44,20 @@ pub fn setup(env: &str) -> Result<Metrics> {
         Histogram::with_opts(HistogramOpts::new("req_elapsed", "Request elapsed time"))?;
     r.register(Box::new(req_elapsed.clone()))?;
 
+    let job_cleanup = Counter::with_opts(Opts::new(
+        "job_cleanup",
+        "How many times the cleanup job ran",
+    ))?;
+    r.register(Box::new(job_cleanup.clone()))?;
+    let job_upload =
+        Counter::with_opts(Opts::new("job_upload", "How many times the upload job ran"))?;
+    r.register(Box::new(job_upload.clone()))?;
+    let batch_inserts = Counter::with_opts(Opts::new(
+        "batch_inserts",
+        "How many times the batch_inserts were performed",
+    ))?;
+    r.register(Box::new(batch_inserts.clone()))?;
+
     tracing::info!("Metrics setup finished");
 
     Ok(Metrics {
@@ -49,5 +68,8 @@ pub fn setup(env: &str) -> Result<Metrics> {
         cache_hit,
         cache_miss,
         req_elapsed,
+        job_cleanup,
+        job_upload,
+        batch_inserts,
     })
 }

@@ -1,3 +1,4 @@
+use sqlx::postgres::PgQueryResult;
 use sqlx::Pool;
 use sqlx::Postgres;
 
@@ -14,23 +15,33 @@ impl CouponRepository {
         Self { conn }
     }
 
-    pub async fn get_by_set(&self, set_id: i64) -> DatabaseResult<Vec<Coupon>> {
-        let result = sqlx::query_as("select * from coupon where set_id = $1")
-            .bind(set_id)
-            .fetch_all(&self.conn)
-            .await?;
+    pub async fn batch_insert(&self, coupons: Vec<Coupon>) -> DatabaseResult<u64> {
+        let (ids, set_ids) =
+            coupons
+                .into_iter()
+                .fold((vec![], vec![]), |(mut ids, mut set_ids), item| {
+                    ids.push(item.id);
+                    set_ids.push(item.set_id);
+                    (ids, set_ids)
+                });
 
-        Ok(result)
+        let result: PgQueryResult = sqlx::query(
+            "insert into coupon(id, set_id) select * from unnest($1::uuid[], $2::int8[])",
+        )
+        .bind(&ids)
+        .bind(&set_ids)
+        .execute(&self.conn)
+        .await?;
+
+        Ok(result.rows_affected())
     }
 
     pub async fn pop_coupons(&self, set_id: i64, limit: i64) -> DatabaseResult<Vec<Coupon>> {
-        let result = sqlx::query_as(
-        "with pop as (delete from coupon where id in (select id from coupon where set_id = $1 limit $2) returning *) select * from pop",
-        )
-        .bind(set_id)
-        .bind(limit)
-        .fetch_all(&self.conn)
-        .await?;
+        let result = sqlx::query_as("with upd as (update coupon set used = true where id in (select id from coupon where set_id = $1 and used = false limit $2) returning *) select * from upd")
+            .bind(set_id)
+            .bind(limit)
+            .fetch_all(&self.conn)
+            .await?;
 
         Ok(result)
     }

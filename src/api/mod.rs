@@ -1,8 +1,11 @@
 pub mod coupon;
 pub mod metrics;
+pub mod worker;
 
 use std::net::Ipv4Addr;
 use std::net::SocketAddrV4;
+use std::sync::Arc;
+use std::sync::Mutex;
 use std::time::Duration;
 
 use anyhow::Context;
@@ -32,6 +35,7 @@ pub struct AppState {
     pub db: Pool<Postgres>,
     pub cache: MultiplexedConnection,
     pub metrics: Metrics,
+    pub timeout: Arc<Mutex<u64>>,
 }
 
 #[tracing::instrument(skip(ctx))]
@@ -78,8 +82,9 @@ pub async fn setup(env: &str, ctx: AppState) -> Result<()> {
 
     let coupons = coupon::router(ctx.clone()).layer(trace_layer.clone());
     let metrics = metrics::router();
+    let workers = worker::router(ctx.clone()).layer(trace_layer.clone());
 
-    let app = Router::new().merge(metrics).merge(coupons);
+    let app = Router::new().merge(metrics).merge(coupons).merge(workers);
 
     let listener =
         tokio::net::TcpListener::bind(SocketAddrV4::new(Ipv4Addr::new(0, 0, 0, 0), config.port))

@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::response::Response;
@@ -11,6 +13,7 @@ pub type ApiResult<T> = Result<T, ApiError>;
 pub enum ApiError {
     Internal(anyhow::Error),
     NotFound(String),
+    BadRequest(String),
 }
 
 #[derive(Serialize)]
@@ -24,6 +27,16 @@ impl ResponseBody {
             message: message.to_string(),
         })
         .unwrap_or_default()
+    }
+}
+
+impl Display for ApiError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ApiError::Internal(err) => write!(f, "ApiError: Internal: {}", err),
+            ApiError::NotFound(message) => write!(f, "ApiError: NotFound: {}", message),
+            ApiError::BadRequest(message) => write!(f, "ApiError: BadRequest: {}", message),
+        }
     }
 }
 
@@ -45,6 +58,15 @@ impl IntoResponse for ApiError {
                 tracing::info!(error = message, "Not Found");
 
                 (StatusCode::NOT_FOUND, ResponseBody::from("Not Found")).into_response()
+            }
+            ApiError::BadRequest(message) => {
+                tracing::error!(message, "Bad Request");
+
+                (
+                    StatusCode::BAD_REQUEST,
+                    ResponseBody::from(message.as_str()),
+                )
+                    .into_response()
             }
         }
     }

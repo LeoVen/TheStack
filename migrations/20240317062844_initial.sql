@@ -14,6 +14,6 @@ create table if not exists coupon (
 
     "used" boolean default false,
 
-    primary key("id"),
+    primary key("id"), -- TODO set primary key on set_id as well
     constraint fk_coupon_set foreign key("set_id") references coupon_set("id")
 );

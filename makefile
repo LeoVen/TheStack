@@ -28,6 +28,9 @@ redis:
 postgres:
 	psql --host=localhost --dbname=default --username=root --password
 
+watch:
+	cargo watch -c -w src -x run
+
 deps:
-	cargo install sqlx-cli
+	cargo install sqlx-cli cargo-watch cargo-expand
 	sudo apt install -y postgresql-client redis-tools
