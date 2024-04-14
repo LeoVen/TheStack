@@ -2,6 +2,8 @@ services:
   stack_api:
     build:
       context: .
+      args:
+        - BINARY_NAME=the_stack
     ports:
       - 3000:3000
     networks:

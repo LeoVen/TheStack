@@ -2,6 +2,7 @@ pub mod api;
 pub mod cache;
 pub mod database;
 pub mod error;
+pub mod hash;
 pub mod jobs;
 pub mod metrics;
 pub mod model;

@@ -1,12 +1,9 @@
-[package]
-name = "the_stack"
-version = "0.1.0"
-edition = "2021"
+[workspace]
+members = ["the_stack", "the_stack_auth", "the_stack_client"]
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[dependencies]
+[workspace.dependencies]
 anyhow = "1.0.81"
+argon2 = "0.5.3"
 axum = "0.7.4"
 chrono = { version = "0.4.35", features = ["serde"] }
 dotenv = "0.15.0"
@@ -23,13 +20,9 @@ sqlx = { version = "0.7.4", features = [
     "chrono",
     "uuid",
 ] }
-tokio = { version = "1.36.0", features = ["macros", "rt-multi-thread"] }
+tokio = { version = "1.36.0", features = ["full"] }
 tokio-retry = "0.3.0"
 tower-http = { version = "0.5.2", features = ["trace", "cors"] }
 tracing = "0.1.40"
 tracing-subscriber = { version = "0.3.18", features = ["json"] }
 uuid = { version = "1.8.0", features = ["serde"] }
-
-[[bin]]
-name = "the_stack"
-path = "src/main.rs"
