@@ -1,5 +1,5 @@
 [workspace]
-members = ["the_stack", "the_stack_auth", "the_stack_client"]
+members = ["the_stack", "the_stack_client"]
 
 [workspace.dependencies]
 anyhow = "1.0.81"
