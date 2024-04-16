@@ -18,7 +18,8 @@ pub fn hash_password(password: &str) -> Result<String, Error> {
     Ok(password_hash)
 }
 
-pub fn verify_password(password: &str, password_hash: &str) -> Result<(), Error> {
-    let parsed_hash = PasswordHash::new(password_hash)?;
-    Argon2::default().verify_password(password.as_bytes(), &parsed_hash)
+pub fn verify_password(phc_format_password: &str, tested_against: &str) -> Result<(), Error> {
+    let real_password = PasswordHash::new(phc_format_password)?;
+
+    Argon2::default().verify_password(tested_against.as_bytes(), &real_password)
 }

@@ -12,6 +12,7 @@ axum = { workspace = true }
 chrono = { workspace = true }
 dotenv = { workspace = true }
 envy = { workspace = true }
+password-hash = { workspace = true }
 prometheus = { workspace = true }
 redis = { workspace = true }
 redis-macros = { workspace = true }

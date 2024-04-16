@@ -25,11 +25,11 @@ migrate:
 redis:
 	redis-cli
 
-postgres:
+postgresql:
 	psql --host=localhost --dbname=default --username=root --password
 
 watch:
-	cargo watch -c -w src -x run
+	cargo watch -w the_stack/src -x "run --bin the_stack"
 
 deps:
 	cargo install sqlx-cli cargo-watch cargo-expand

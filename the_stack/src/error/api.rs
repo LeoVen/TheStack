@@ -12,8 +12,10 @@ pub type ApiResult<T> = Result<T, ApiError>;
 #[derive(Debug)]
 pub enum ApiError {
     Internal(anyhow::Error),
+    Conflict(anyhow::Error, String),
     NotFound(String),
     BadRequest(String),
+    Unauthorized,
 }
 
 #[derive(Serialize)]
@@ -36,6 +38,8 @@ impl Display for ApiError {
             ApiError::Internal(err) => write!(f, "ApiError: Internal: {}", err),
             ApiError::NotFound(message) => write!(f, "ApiError: NotFound: {}", message),
             ApiError::BadRequest(message) => write!(f, "ApiError: BadRequest: {}", message),
+            ApiError::Unauthorized => write!(f, "ApiError: Unauthorized"),
+            ApiError::Conflict(err, _) => write!(f, "ApiError: Conflict: {}", err),
         }
     }
 }
@@ -68,6 +72,22 @@ impl IntoResponse for ApiError {
                 )
                     .into_response()
             }
+            ApiError::Unauthorized => {
+                tracing::info!("Unauthorized");
+
+                (StatusCode::UNAUTHORIZED, ResponseBody::from("Unauthorized")).into_response()
+            }
+            ApiError::Conflict(error, constraint) => {
+                let error = error.to_string();
+
+                tracing::info!(error = error, "Conflict on {}", constraint);
+
+                (
+                    StatusCode::CONFLICT,
+                    ResponseBody::from("Resource Already Exists"),
+                )
+                    .into_response()
+            }
         }
     }
 }
@@ -78,6 +98,8 @@ impl From<ServiceError> for ApiError {
         match err {
             ServiceError::NotFound => ApiError::NotFound("Not Found".to_string()),
             ServiceError::Internal(err) => ApiError::Internal(err),
+            ServiceError::Unauthorized => ApiError::Unauthorized,
+            ServiceError::Conflict(err, conflict) => ApiError::Conflict(err, conflict),
         }
     }
 }

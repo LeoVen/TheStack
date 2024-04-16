@@ -1,5 +1,6 @@
 pub mod coupon;
 pub mod metrics;
+pub mod userlogin;
 pub mod worker;
 
 use std::net::Ipv4Addr;
@@ -82,9 +83,14 @@ pub async fn setup(env: &str, ctx: AppState) -> Result<()> {
 
     let coupons = coupon::router(ctx.clone()).layer(trace_layer.clone());
     let metrics = metrics::router();
+    let userlogin = userlogin::router(ctx.clone()).layer(trace_layer.clone());
     let workers = worker::router(ctx.clone()).layer(trace_layer.clone());
 
-    let app = Router::new().merge(metrics).merge(coupons).merge(workers);
+    let app = Router::new()
+        .merge(metrics)
+        .merge(coupons)
+        .merge(workers)
+        .merge(userlogin);
 
     let listener =
         tokio::net::TcpListener::bind(SocketAddrV4::new(Ipv4Addr::new(0, 0, 0, 0), config.port))

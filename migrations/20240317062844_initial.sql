@@ -17,3 +17,11 @@ create table if not exists coupon (
     primary key("id"), -- TODO set primary key on set_id as well
     constraint fk_coupon_set foreign key("set_id") references coupon_set("id")
 );
+
+create table if not exists "userlogin" (
+    "id" bigserial,
+    "email" varchar(128) unique,
+    "password" varchar,
+
+    primary key("id")
+);

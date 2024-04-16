@@ -1,0 +1,27 @@
+# Use vscode Rest Client to send these requests from 
+# Extension ID: humao.rest-client
+
+#################### User Login
+
+## Create User
+
+POST http://localhost:3000/userlogin/create
+Content-Type: application/json
+
+{
+    "email": "example@mail.com",
+    "password": "123pass123"
+}
+
+## Login with User
+
+POST http://localhost:3000/userlogin/login
+Content-Type: application/json
+
+{
+    "email": "example@mail.com",
+    "password": "123pass123"
+}
+
+#################### Coupon
+# TODO

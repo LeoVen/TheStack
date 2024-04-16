@@ -1,4 +1,5 @@
 [workspace]
+resolver = "2"
 members = ["the_stack", "the_stack_client"]
 
 [workspace.dependencies]
@@ -8,6 +9,7 @@ axum = "0.7.4"
 chrono = { version = "0.4.35", features = ["serde"] }
 dotenv = "0.15.0"
 envy = "0.4.2"
+password-hash = { version = "0.5.0", features = ["std"] }
 prometheus = "0.13.3"
 redis = { version = "0.25.1", features = ["tokio-rustls-comp", "json"] }
 redis-macros = "0.2.1"
