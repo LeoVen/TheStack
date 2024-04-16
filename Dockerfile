@@ -20,5 +20,6 @@ RUN cargo build --release --bin ${BINARY_NAME}
 FROM debian:bookworm-slim AS runtime
 ARG BINARY_NAME
 WORKDIR /app
-COPY --from=builder /app/target/release/${BINARY_NAME} /usr/local/bin
-ENTRYPOINT ["/usr/local/bin/${BINARY_NAME}"]
+COPY --from=builder /app/target/release/${BINARY_NAME} /usr/local/bin/rust_program
+
+ENTRYPOINT ["/usr/local/bin/rust_program"]
