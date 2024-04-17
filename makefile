@@ -31,6 +31,9 @@ postgresql:
 watch:
 	cargo watch -w the_stack/src -x "run --bin the_stack"
 
+tester:
+	cargo run --bin the_stack_tester
+
 deps:
 	cargo install sqlx-cli cargo-watch cargo-expand
 	sudo apt install -y postgresql-client redis-tools

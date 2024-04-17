@@ -4,7 +4,6 @@ use std::sync::Mutex;
 use anyhow::Context;
 use anyhow::Result;
 use redis::aio::MultiplexedConnection;
-
 use serde::Deserialize;
 use sqlx::Pool;
 use sqlx::Postgres;

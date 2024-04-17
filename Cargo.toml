@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["the_stack", "the_stack_client"]
+members = ["the_stack", "the_stack_client", "the_stack_tester"]
 
 [workspace.dependencies]
 anyhow = "1.0.81"
@@ -13,6 +13,7 @@ password-hash = { version = "0.5.0", features = ["std"] }
 prometheus = "0.13.3"
 redis = { version = "0.25.1", features = ["tokio-rustls-comp", "json"] }
 redis-macros = "0.2.1"
+reqwest = { version = "0.12.3", features = ["json"] }
 serde = { version = "1.0.197", features = ["derive"] }
 serde_json = "1.0.114"
 sqlx = { version = "0.7.4", features = [
@@ -27,4 +28,4 @@ tokio-retry = "0.3.0"
 tower-http = { version = "0.5.2", features = ["trace", "cors"] }
 tracing = "0.1.40"
 tracing-subscriber = { version = "0.3.18", features = ["json"] }
-uuid = { version = "1.8.0", features = ["serde"] }
+uuid = { version = "1.8.0", features = ["serde", "v4"] }

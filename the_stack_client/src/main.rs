@@ -1,5 +1,7 @@
 #[tokio::main]
 async fn main() {
 
-    // TODO send requests to the API
+    // TODO front-end app that lists information about coupon sets
+    // Display remaining count of coupons
+    // Allow to upload random coupons
 }
