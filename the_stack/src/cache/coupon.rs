@@ -1,3 +1,5 @@
+use std::num::NonZeroUsize;
+
 use redis::aio::MultiplexedConnection;
 use redis::AsyncCommands;
 use redis::Direction;
@@ -48,6 +50,12 @@ impl CouponCache {
                 Direction::Left,
             )
             .await?;
+
+        Ok(result)
+    }
+
+    pub async fn pop_coupon_list(&mut self, key: &str) -> CacheResult<Vec<String>> {
+        let result = self.conn.lpop(key, NonZeroUsize::new(10000)).await?;
 
         Ok(result)
     }

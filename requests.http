@@ -1,6 +1,12 @@
 # Use vscode Rest Client to send these requests from 
 # Extension ID: humao.rest-client
 
+# User Login
+# Coupon
+# Metrics
+# Worker
+
+
 #################### User Login
 
 ## Create User
@@ -23,5 +29,37 @@ Content-Type: application/json
     "password": "123pass123"
 }
 
+
 #################### Coupon
-# TODO
+
+# Get single coupon
+
+GET http://localhost:3000/coupon_set/1/coupon
+
+# Upload coupons
+
+POST http://localhost:3000/coupon_set/1/upload
+Content-Type: application/json
+
+[
+    "39600ed3-76e5-4237-b885-0c496148c831",
+    "36389d4c-46f1-4149-b570-8d4bc86d1ad1",
+    "c8b8d194-bc6a-4c9c-8f7b-35ea70e4f9d1",
+    "c0327618-d36f-456f-87ce-201fa9719641",
+    "832af5f5-2557-41c9-9c01-266f2951adf1",
+    "bb0b1199-2caa-4f89-b66e-788d9c539881",
+    "a1201f5f-8313-453d-aeb3-de201e642411",
+    "0dbde09e-78ec-455f-980b-798d88a93311",
+    "a9a33fb2-6dfe-471e-b03d-290b9a0bafa1",
+    "7bb7684f-934b-4125-9577-29dabec9b071"
+]
+
+
+#################### Metrics
+
+GET http://localhost:3000/metrics
+
+
+#################### Worker
+
+PUT http://localhost:3000/worker/timeout_seconds/120

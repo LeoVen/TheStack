@@ -15,8 +15,8 @@ struct WorkerAppState {
 pub fn router(ctx: AppState) -> Router {
     Router::<Arc<WorkerAppState>>::new()
         .route(
-            "/worker/timeout/:timeout_seconds",
-            axum::routing::get(set_timeout),
+            "/worker/timeout_seconds/:timeout",
+            axum::routing::put(set_timeout),
         )
         .with_state(
             (WorkerAppState {
@@ -29,11 +29,11 @@ pub fn router(ctx: AppState) -> Router {
 #[tracing::instrument(skip_all)]
 async fn set_timeout(
     State(ctx): State<Arc<WorkerAppState>>,
-    Path(timeout_seconds): Path<u64>,
+    Path(timeout): Path<u64>,
 ) -> ApiResult<()> {
     let mut lock = ctx.timeout.lock().expect("mutext lock PoisonError");
 
-    *lock = timeout_seconds;
+    *lock = timeout;
 
     Ok(())
 }

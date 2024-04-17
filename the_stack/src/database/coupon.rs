@@ -1,6 +1,7 @@
 use sqlx::postgres::PgQueryResult;
 use sqlx::Pool;
 use sqlx::Postgres;
+use uuid::Uuid;
 
 use crate::error::database::DatabaseResult;
 use crate::model::coupon::Coupon;
@@ -44,5 +45,19 @@ impl CouponRepository {
             .await?;
 
         Ok(result)
+    }
+
+    pub async fn delete_coupons(&self, coupons: &[Uuid]) -> DatabaseResult<u64> {
+        if coupons.is_empty() {
+            return Ok(0);
+        }
+
+        let result =
+            sqlx::query("delete from coupon where id in (select * from unnest($1::uuid[]))")
+                .bind(coupons)
+                .execute(&self.conn)
+                .await?;
+
+        Ok(result.rows_affected())
     }
 }

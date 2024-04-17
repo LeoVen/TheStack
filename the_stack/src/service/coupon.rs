@@ -83,7 +83,7 @@ impl CouponService {
 
         // TODO this can be improved
 
-        let coupons = self.repo.pop_coupons(set_id, 100).await?;
+        let coupons = self.repo.pop_coupons(set_id, 1000).await?;
 
         cache.batch_insert(set_id, &coupons).await?;
 

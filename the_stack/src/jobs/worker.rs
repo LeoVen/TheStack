@@ -9,7 +9,10 @@ use redis::AsyncCommands;
 use serde::Deserialize;
 use sqlx::Pool;
 use sqlx::Postgres;
+use uuid::Uuid;
 
+use crate::cache::coupon::CouponCache;
+use crate::database::coupon::CouponRepository;
 use crate::metrics::Metrics;
 use crate::model::coupon::CouponSet;
 
@@ -66,9 +69,40 @@ pub async fn cleanup_worker(
             }
         };
 
-        // TODO
-        let _ = db;
-        println!("{:?}", keys);
+        tracing::debug!("cleaning up {} coupon sets", &keys.len());
+
+        let mut coupon_cache = CouponCache::new(cache.clone());
+        let mut coupons_to_delete = vec![];
+
+        for key in keys.iter() {
+            let Ok(mut coupons) = coupon_cache.pop_coupon_list(key).await else {
+                continue;
+            };
+
+            coupons_to_delete.append(&mut coupons);
+        }
+
+        tracing::debug!(
+            "cleaning up {} coupons from the database",
+            coupons_to_delete.len()
+        );
+
+        let coupon_database = CouponRepository::new(db.clone());
+
+        let coupons_to_delete = coupons_to_delete
+            .iter()
+            .map(|value| Uuid::try_parse(value).unwrap())
+            .collect::<Vec<Uuid>>();
+
+        let result = coupon_database.delete_coupons(&coupons_to_delete).await;
+
+        match result {
+            Ok(rows_affected) => tracing::info!(rows_affected, "coupons deleted from the database"),
+            Err(error) => {
+                let error = error.to_string();
+                tracing::error!(error, "error when deleting coupons from the database");
+            }
+        }
 
         let timeout = *timeout.lock().unwrap();
         tracing::info!(timeout, "cleaning up finished and now waiting");
