@@ -1,41 +1,40 @@
-use std::str::FromStr;
+pub mod runner;
+pub mod upload;
 
-use reqwest::Url;
-use uuid::Uuid;
+use std::time::Duration;
 
-const UPLOAD_TOTAL: usize = 50000;
-const SET_ID: i64 = 1;
+use crate::upload::create_set;
+use crate::upload::upload_coupons;
 
-struct IdGenerator;
-
-impl Iterator for IdGenerator {
-    type Item = Uuid;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        Some(Uuid::new_v4())
-    }
-}
+pub const TOTAL_UPLOAD: usize = 50000;
+pub const TOTAL_SETS: usize = 20;
+pub const WAIT_SECS: u64 = 10; // wait for data to be in DB
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    tracing_subscriber::fmt()
+        .with_max_level(tracing::Level::INFO)
+        .init();
+
     let client = reqwest::Client::new();
+    let mut sets = vec![];
 
-    let url = Url::from_str(&format!(
-        "http://localhost:3000/coupon_set/{}/upload",
-        SET_ID
-    ))?;
+    for i in 0..TOTAL_SETS {
+        let set = create_set(&client, format!("Campaign {}", i)).await?;
+        let coupons = upload_coupons(&client, set.id).await?;
 
-    let coupons = IdGenerator
-        .take(UPLOAD_TOTAL)
-        .map(|id| id.to_string())
-        .collect::<Vec<String>>();
+        tracing::info!("Uploaded {} coupons to set {}", coupons.len(), set.id);
 
-    let result = client.post(url).json(&coupons).send().await;
-
-    match result {
-        Ok(resp) => println!("{:?}", resp),
-        Err(error) => eprintln!("{}", error),
+        sets.push((set, coupons));
     }
+
+    tracing::info!(
+        "Waiting {} seconds for data to be inserted into the database",
+        WAIT_SECS
+    );
+    tokio::time::sleep(Duration::from_secs(WAIT_SECS)).await;
+
+    runner::run_benchmark(sets).await?;
 
     Ok(())
 }

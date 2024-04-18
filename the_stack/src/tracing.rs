@@ -16,6 +16,10 @@ pub fn setup() -> String {
         tracing_subscriber::fmt()
             .with_max_level(tracing::Level::DEBUG)
             .init();
+    } else if config.env == "test" {
+        tracing_subscriber::fmt()
+            .with_max_level(tracing::Level::INFO)
+            .init();
     } else {
         tracing_subscriber::fmt().json().init();
     }

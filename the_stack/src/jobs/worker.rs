@@ -69,7 +69,7 @@ pub async fn cleanup_worker(
             }
         };
 
-        tracing::debug!("cleaning up {} coupon sets", &keys.len());
+        tracing::info!("cleaning up {} coupon sets", &keys.len());
 
         let mut coupon_cache = CouponCache::new(cache.clone());
         let mut coupons_to_delete = vec![];
@@ -82,7 +82,7 @@ pub async fn cleanup_worker(
             coupons_to_delete.append(&mut coupons);
         }
 
-        tracing::debug!(
+        tracing::info!(
             "cleaning up {} coupons from the database",
             coupons_to_delete.len()
         );

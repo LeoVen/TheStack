@@ -16,7 +16,7 @@ impl UserLoginService {
     pub async fn create_account(&self, email: String, password: String) -> ServiceResult<()> {
         let password = hash_password(&password)?;
 
-        tracing::debug!("creating user {}", email);
+        tracing::info!("creating user {}", email);
 
         let _ = self
             .repo

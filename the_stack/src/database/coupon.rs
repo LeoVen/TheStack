@@ -5,6 +5,8 @@ use uuid::Uuid;
 
 use crate::error::database::DatabaseResult;
 use crate::model::coupon::Coupon;
+use crate::model::coupon::CouponSet;
+use crate::model::coupon::CreateCouponSetDto;
 
 #[derive(Clone)]
 pub struct CouponRepository {
@@ -59,5 +61,16 @@ impl CouponRepository {
                 .await?;
 
         Ok(result.rows_affected())
+    }
+
+    pub async fn create_set(&self, create_dto: CreateCouponSetDto) -> DatabaseResult<CouponSet> {
+        let result = sqlx::query_as(
+            "with add as (insert into coupon_set (name) values ($1) returning *) select * from add",
+        )
+        .bind(create_dto.name)
+        .fetch_one(&self.conn)
+        .await?;
+
+        Ok(result)
     }
 }

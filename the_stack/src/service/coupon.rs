@@ -6,6 +6,8 @@ use crate::error::service::ServiceError;
 use crate::error::service::ServiceResult;
 use crate::metrics::Metrics;
 use crate::model::coupon::Coupon;
+use crate::model::coupon::CouponSet;
+use crate::model::coupon::CreateCouponSetDto;
 
 pub struct CouponService {
     repo: CouponRepository,
@@ -97,5 +99,14 @@ impl CouponService {
         }
 
         Err(ServiceError::NotFound)
+    }
+
+    #[tracing::instrument(skip(self))]
+    pub async fn create_coupon_set(
+        &self,
+        create_dto: CreateCouponSetDto,
+    ) -> ServiceResult<CouponSet> {
+        let result = self.repo.create_set(create_dto).await?;
+        Ok(result)
     }
 }

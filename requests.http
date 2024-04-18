@@ -32,6 +32,15 @@ Content-Type: application/json
 
 #################### Coupon
 
+# Create coupon set
+
+POST http://localhost:3000/coupon_set
+Content-Type: application/json
+
+{
+    "name": "Campaign 1"
+}
+
 # Get single coupon
 
 GET http://localhost:3000/coupon_set/1/coupon

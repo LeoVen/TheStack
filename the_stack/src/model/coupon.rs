@@ -5,7 +5,7 @@ use serde::Serialize;
 use sqlx::FromRow;
 use uuid::Uuid;
 
-#[derive(Serialize, Deserialize, FromRow, Clone, FromRedisValue, ToRedisArgs)]
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct CouponSet {
     pub id: i64,
     pub name: String,
@@ -26,13 +26,13 @@ impl CouponSet {
     }
 }
 
-#[derive(Serialize, Deserialize, FromRow, Clone, FromRedisValue, ToRedisArgs)]
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow, FromRedisValue, ToRedisArgs)]
 pub struct Coupon {
     pub id: Uuid,
     pub set_id: i64,
 }
 
-#[derive(Serialize, Deserialize, FromRow, Clone, FromRedisValue, ToRedisArgs)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CreateCouponSetDto {
     pub name: String,
 }
