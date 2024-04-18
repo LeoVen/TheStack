@@ -62,5 +62,18 @@ services:
     networks:
       - subnet_1
 
+  prometheus:
+    build:
+      context: ./docker/prometheus
+    env_file:
+      - path: .env
+        required: true
+    ports:
+      - 9090:9090
+    networks:
+      - subnet_1
+    depends_on:
+      - stack_api
+
 networks:
   subnet_1:
