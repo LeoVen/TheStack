@@ -1,5 +1,6 @@
 use std::collections::HashSet;
 
+use anyhow::Error;
 use itertools::Itertools;
 use rand::Rng;
 use the_stack::model::coupon::CouponSet;
@@ -78,10 +79,16 @@ async fn fetch_all(data: Vec<(CouponSet, Vec<String>)>) -> anyhow::Result<()> {
     let client = reqwest::Client::new();
 
     let mut pct = 0.1;
+    let mut total_errors = 0;
 
     loop {
+        // TODO add total_errors to env var
         if data.is_empty() {
             break;
+        }
+
+        if total_errors > 100 {
+            return Err(Error::msg("TOO MANY ERRORS!"));
         }
 
         // Randomly select a coupon set to extract from
@@ -91,6 +98,7 @@ async fn fetch_all(data: Vec<(CouponSet, Vec<String>)>) -> anyhow::Result<()> {
         };
 
         let selected = &mut data[idx];
+        let set_id = selected.0.id;
 
         if selected.1.is_empty() {
             let _ = data.remove(idx);
@@ -98,6 +106,7 @@ async fn fetch_all(data: Vec<(CouponSet, Vec<String>)>) -> anyhow::Result<()> {
         }
 
         let Some(coupon) = fetch_coupon(&client, selected.0.id).await? else {
+            total_errors += 1;
             continue;
         };
 
@@ -105,7 +114,7 @@ async fn fetch_all(data: Vec<(CouponSet, Vec<String>)>) -> anyhow::Result<()> {
 
         let rem = data.iter().fold(0, |acc, (_, coupons)| acc + coupons.len());
         if (rem as f64 / total_coupons as f64) <= (1.0 - pct) {
-            tracing::info!("Processed {:.2}% ({} left)", pct * 100.0, rem);
+            tracing::info!("[{}] Processed {:.2}% ({} left)", set_id, pct * 100.0, rem);
 
             pct += 0.1;
         }

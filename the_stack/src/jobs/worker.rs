@@ -69,6 +69,13 @@ pub async fn cleanup_worker(
             }
         };
 
+        if keys.is_empty() {
+            let timeout = *timeout.lock().unwrap();
+            tracing::info!(timeout, "nothing to cleanup and now waiting");
+            tokio::time::sleep(Duration::from_secs(timeout)).await;
+            continue;
+        }
+
         tracing::info!("cleaning up {} coupon sets", &keys.len());
 
         let mut coupon_cache = CouponCache::new(cache.clone());

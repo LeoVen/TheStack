@@ -39,6 +39,7 @@ impl CouponRepository {
         Ok(result.rows_affected())
     }
 
+    // TODO fix deadlock
     pub async fn pop_coupons(&self, set_id: i64, limit: i64) -> DatabaseResult<Vec<Coupon>> {
         let result = sqlx::query_as("with upd as (update coupon set used = true where id in (select id from coupon where set_id = $1 and used = false limit $2) returning *) select * from upd")
             .bind(set_id)
