@@ -6,11 +6,14 @@ members = ["the_stack", "the_stack_client", "the_stack_tester"]
 anyhow = "1.0.81"
 argon2 = "0.5.3"
 axum = "0.7.4"
+console-subscriber = "0.2.0" # tokio
 chrono = { version = "0.4.35", features = ["serde"] }
 dotenv = "0.15.0"
 envy = "0.4.2"
+itertools = "0.12.1"
 password-hash = { version = "0.5.0", features = ["std"] }
 prometheus = "0.13.3"
+rand = "0.8.5"
 redis = { version = "0.25.1", features = ["tokio-rustls-comp", "json"] }
 redis-macros = "0.2.1"
 reqwest = { version = "0.12.3", features = ["json"] }
@@ -23,7 +26,7 @@ sqlx = { version = "0.7.4", features = [
     "chrono",
     "uuid",
 ] }
-tokio = { version = "1.36.0", features = ["full"] }
+tokio = { version = "1.36.0", features = ["full", "tracing"] }
 tokio-retry = "0.3.0"
 tower-http = { version = "0.5.2", features = ["trace", "cors"] }
 tracing = "0.1.40"

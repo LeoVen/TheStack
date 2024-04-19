@@ -1,19 +1,49 @@
 use std::collections::HashSet;
-use std::str::FromStr;
 
-use anyhow::Context;
-use reqwest::Url;
-use the_stack::model::coupon::Coupon;
+use itertools::Itertools;
+use rand::Rng;
 use the_stack::model::coupon::CouponSet;
 use tokio::task::JoinSet;
 
+use crate::fetch::fetch_coupon;
 use crate::TOTAL_UPLOAD;
 
 #[tracing::instrument(skip_all)]
-pub async fn run_benchmark(sets: Vec<(CouponSet, Vec<String>)>) -> anyhow::Result<()> {
-    let mut js = JoinSet::new();
+pub async fn run_real_world_simulation(sets: Vec<(CouponSet, Vec<String>)>) -> anyhow::Result<()> {
+    // Chunk coupons into sets.len() and distribute a bit of every set for each job
+    let len = sets.len();
+    let chunk_size = TOTAL_UPLOAD / len;
 
-    for set in sets.into_iter() {
+    let mut chunked: Vec<(CouponSet, Vec<Vec<String>>)> = sets
+        .into_iter()
+        .map(|(set, coupons)| {
+            let chunks = coupons
+                .into_iter()
+                .chunks(chunk_size)
+                .into_iter()
+                .map(|c| c.collect())
+                .collect();
+
+            (set, chunks)
+        })
+        .collect();
+
+    let mut chunked_sets: Vec<Vec<(CouponSet, Vec<String>)>> = vec![];
+
+    for _ in 0..len {
+        let mut nth_chunk = vec![];
+
+        for chunk in chunked.iter_mut() {
+            let coupons = chunk.1.pop().unwrap_or_default();
+
+            nth_chunk.push((chunk.0.clone(), coupons));
+        }
+
+        chunked_sets.push(nth_chunk);
+    }
+
+    let mut js = JoinSet::new();
+    for set in chunked_sets.into_iter() {
         js.spawn(async { fetch_all(set).await });
     }
 
@@ -31,60 +61,61 @@ pub async fn run_benchmark(sets: Vec<(CouponSet, Vec<String>)>) -> anyhow::Resul
 }
 
 #[tracing::instrument(skip_all)]
-async fn fetch_all(data: (CouponSet, Vec<String>)) -> anyhow::Result<()> {
-    let set = data.0;
-    let coupons = data.1;
-
-    let mut coupons: HashSet<String> = HashSet::from_iter(coupons.into_iter());
+async fn fetch_all(data: Vec<(CouponSet, Vec<String>)>) -> anyhow::Result<()> {
+    let total_coupons = data.iter().fold(0, |acc, (_, coupons)| acc + coupons.len());
 
     tracing::info!(
-        "Fetching from {} (id: {}) a total of {} coupons",
-        set.name,
-        set.id,
-        coupons.len()
+        "Fetching randomly from {} chunked sets with {} coupons in total",
+        data.len(),
+        total_coupons,
     );
 
+    let mut data: Vec<(CouponSet, HashSet<String>)> = data
+        .into_iter()
+        .map(|(set, coupons)| (set, HashSet::from_iter(coupons.into_iter())))
+        .collect();
+
     let client = reqwest::Client::new();
-    let url = Url::from_str(&format!(
-        "http://localhost:3000/coupon_set/{}/coupon",
-        set.id
-    ))?;
 
     let mut pct = 0.1;
 
-    for _ in 0..coupons.len() {
-        let coupon = client
-            .get(url.clone())
-            .send()
-            .await
-            .context(format!("sending request for set id {}", set.id))?
-            .json::<Coupon>()
-            .await
-            .context(format!("decoding request for set id {}", set.id))?;
+    loop {
+        if data.is_empty() {
+            break;
+        }
 
-        coupons.remove(&coupon.id.to_string());
+        // Randomly select a coupon set to extract from
+        let idx = {
+            let mut rng = rand::thread_rng();
+            rng.gen_range(0..data.len())
+        };
 
-        let rem = coupons.len();
+        let selected = &mut data[idx];
 
-        if (rem as f64 / TOTAL_UPLOAD as f64) <= (1.0 - pct) {
-            tracing::info!(
-                "[{}] {} processed {:.2}% ({} left)",
-                set.id,
-                set.name,
-                pct * 100.0,
-                rem
-            );
+        if selected.1.is_empty() {
+            let _ = data.remove(idx);
+            continue;
+        }
+
+        let Some(coupon) = fetch_coupon(&client, selected.0.id).await? else {
+            continue;
+        };
+
+        selected.1.remove(&coupon.id.to_string());
+
+        let rem = data.iter().fold(0, |acc, (_, coupons)| acc + coupons.len());
+        if (rem as f64 / total_coupons as f64) <= (1.0 - pct) {
+            tracing::info!("Processed {:.2}% ({} left)", pct * 100.0, rem);
 
             pct += 0.1;
         }
-    }
 
-    if !coupons.is_empty() {
-        eprintln!(
-            "Coupon set {} still has {} coupons that were not fetched",
-            set.id,
-            coupons.len()
-        );
+        // // Random timeout to simulate "real world usage" :D
+        // let millis = {
+        //     let mut rng = rand::thread_rng();
+        //     rng.gen_range(1..100)
+        // };
+        // tokio::time::sleep(Duration::from_millis(millis)).await;
     }
 
     Ok(())

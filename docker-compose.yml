@@ -6,6 +6,7 @@ services:
         - BINARY_NAME=the_stack
     ports:
       - 3000:3000
+      - 5555:6669 # tokio console
     networks:
       - subnet_1
     env_file:
