@@ -75,5 +75,18 @@ services:
     depends_on:
       - stack_api
 
+  grafana:
+    build:
+      context: ./docker/grafana
+    env_file:
+      - path: .env
+        required: true
+    ports:
+      - 9999:3000
+    networks:
+      - subnet_1
+    depends_on:
+      - prometheus
+
 networks:
   subnet_1:
