@@ -8,6 +8,14 @@ use crate::model::coupon::Coupon;
 use crate::model::coupon::CouponSet;
 use crate::model::coupon::CreateCouponSetDto;
 
+static POP_COUPONS_QUERY: &str = r"
+WITH upd AS
+    (UPDATE coupon SET used = true WHERE id IN
+            (SELECT id FROM coupon WHERE set_id = $1 AND used = false ORDER BY id LIMIT $2)
+    RETURNING *)
+SELECT * FROM upd
+";
+
 #[derive(Clone)]
 pub struct CouponRepository {
     conn: Pool<Postgres>,
@@ -39,9 +47,8 @@ impl CouponRepository {
         Ok(result.rows_affected())
     }
 
-    // TODO fix deadlock
     pub async fn pop_coupons(&self, set_id: i64, limit: i64) -> DatabaseResult<Vec<Coupon>> {
-        let result = sqlx::query_as("with upd as (update coupon set used = true where id in (select id from coupon where set_id = $1 and used = false limit $2) returning *) select * from upd")
+        let result = sqlx::query_as(POP_COUPONS_QUERY)
             .bind(set_id)
             .bind(limit)
             .fetch_all(&self.conn)
