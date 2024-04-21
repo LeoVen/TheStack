@@ -12,6 +12,14 @@ pub struct CouponSet {
     pub created_at: chrono::DateTime<chrono::Utc>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
+pub struct CouponSetStatus {
+    pub id: i64,
+    pub name: String,
+    pub created_at: chrono::DateTime<chrono::Utc>,
+    pub total_coupons: i64,
+}
+
 impl CouponSet {
     pub fn set_key(id: i64) -> String {
         format!("thestack::coupons::{}", id)

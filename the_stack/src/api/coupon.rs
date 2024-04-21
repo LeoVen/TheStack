@@ -12,6 +12,7 @@ use crate::error::api::ApiError;
 use crate::error::api::ApiResult;
 use crate::model::coupon::Coupon;
 use crate::model::coupon::CouponSet;
+use crate::model::coupon::CouponSetStatus;
 use crate::model::coupon::CreateCouponSetDto;
 use crate::service::coupon::CouponService;
 
@@ -27,6 +28,7 @@ pub fn router(ctx: AppState) -> Router {
             axum::routing::post(upload_coupons),
         )
         .route("/coupon_set", axum::routing::post(create_set))
+        .route("/coupon_set/status", axum::routing::get(set_status))
         .with_state(
             (CouponAppState {
                 service: CouponService::new(
@@ -69,5 +71,13 @@ async fn create_set(
     Json(create_dto): Json<CreateCouponSetDto>,
 ) -> ApiResult<Json<CouponSet>> {
     let result = ctx.service.create_coupon_set(create_dto).await?;
+    Ok(Json(result))
+}
+
+#[tracing::instrument(skip_all)]
+async fn set_status(
+    State(ctx): State<Arc<CouponAppState>>,
+) -> ApiResult<Json<Vec<CouponSetStatus>>> {
+    let result = ctx.service.set_status().await?;
     Ok(Json(result))
 }

@@ -7,6 +7,7 @@ use crate::error::service::ServiceResult;
 use crate::metrics::Metrics;
 use crate::model::coupon::Coupon;
 use crate::model::coupon::CouponSet;
+use crate::model::coupon::CouponSetStatus;
 use crate::model::coupon::CreateCouponSetDto;
 
 pub struct CouponService {
@@ -107,6 +108,12 @@ impl CouponService {
         create_dto: CreateCouponSetDto,
     ) -> ServiceResult<CouponSet> {
         let result = self.repo.create_set(create_dto).await?;
+        Ok(result)
+    }
+
+    #[tracing::instrument(skip_all)]
+    pub async fn set_status(&self) -> ServiceResult<Vec<CouponSetStatus>> {
+        let result = self.repo.set_status().await?;
         Ok(result)
     }
 }

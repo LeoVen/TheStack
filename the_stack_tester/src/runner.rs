@@ -82,11 +82,11 @@ async fn fetch_all(data: Vec<(CouponSet, Vec<String>)>) -> anyhow::Result<()> {
     let mut total_errors = 0;
 
     loop {
-        // TODO add total_errors to env var
         if data.is_empty() {
             break;
         }
 
+        // TODO add total_errors to env var
         if total_errors > 100 {
             return Err(Error::msg("TOO MANY ERRORS!"));
         }
@@ -105,6 +105,7 @@ async fn fetch_all(data: Vec<(CouponSet, Vec<String>)>) -> anyhow::Result<()> {
             continue;
         }
 
+        // TODO if 404 check how many coupons are left in the set
         let Some(coupon) = fetch_coupon(&client, selected.0.id).await? else {
             total_errors += 1;
             continue;

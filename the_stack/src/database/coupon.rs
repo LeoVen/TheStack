@@ -6,6 +6,7 @@ use uuid::Uuid;
 use crate::error::database::DatabaseResult;
 use crate::model::coupon::Coupon;
 use crate::model::coupon::CouponSet;
+use crate::model::coupon::CouponSetStatus;
 use crate::model::coupon::CreateCouponSetDto;
 
 static POP_COUPONS_QUERY: &str = r"
@@ -77,6 +78,16 @@ impl CouponRepository {
         )
         .bind(create_dto.name)
         .fetch_one(&self.conn)
+        .await?;
+
+        Ok(result)
+    }
+
+    pub async fn set_status(&self) -> DatabaseResult<Vec<CouponSetStatus>> {
+        let result = sqlx::query_as(
+            "select *, (select count(*) from coupon c where c.set_id = s.id) as total_coupons from coupon_set s",
+        )
+        .fetch_all(&self.conn)
         .await?;
 
         Ok(result)

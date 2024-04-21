@@ -25,11 +25,10 @@ pub async fn fetch_coupon(client: &Client, set_id: i64) -> anyhow::Result<Option
             .await
             .context(format!("decoding request for set id {}", set_id))?;
         return Ok(Some(coupon));
-    } else {
-        let body: serde_json::Value = response.json().await?;
-
-        tracing::warn!("Request Error [{}]: {}", status, body);
     }
+
+    let body: serde_json::Value = response.json().await?;
+    tracing::warn!("Request Error [{}]: {}", status, body);
 
     Ok(None)
 }

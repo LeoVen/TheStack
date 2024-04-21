@@ -89,6 +89,7 @@ pub async fn cleanup_worker(
             coupons_to_delete.append(&mut coupons);
         }
 
+        // TODO this number does not match rows_affected
         tracing::info!(
             "cleaning up {} coupons from the database",
             coupons_to_delete.len()
