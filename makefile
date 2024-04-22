@@ -1,8 +1,10 @@
 up: clippy format build
 	docker compose up -d
-	sleep 5
-	sqlx migrate run
-	docker compose logs -f
+	. ./scripts/sqlx_migrate.sh
+	. ./scripts/setup_keycloak.sh
+
+down:
+	docker compose down
 
 build:
 	docker compose build
@@ -26,7 +28,7 @@ redis:
 	redis-cli
 
 postgresql:
-	psql --host=localhost --dbname=default --username=root --password
+	psql --host=localhost --dbname=root --username=root --password
 
 watch:
 	cargo watch -w the_stack/src -x "run --bin the_stack"
@@ -39,4 +41,4 @@ tester:
 
 deps:
 	cargo install sqlx-cli cargo-watch cargo-expand tokio-console
-	sudo apt install -y postgresql-client redis-tools
+	sudo apt install -y postgresql-client redis-tools curl jq

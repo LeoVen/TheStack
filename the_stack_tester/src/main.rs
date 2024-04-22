@@ -13,8 +13,8 @@ use crate::upload::create_set;
 use crate::upload::upload_coupons;
 
 // TODO extract these to env vars
-pub const TOTAL_UPLOAD: usize = 10000;
-pub const TOTAL_SETS: usize = 20;
+pub const TOTAL_UPLOAD: usize = 2000;
+pub const TOTAL_SETS: usize = 2;
 pub const WAIT_SECS: u64 = 5; // wait for data to be in DB
 pub const BENCHMARK: bool = false;
 

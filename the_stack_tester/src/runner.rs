@@ -7,6 +7,7 @@ use the_stack::model::coupon::CouponSet;
 use tokio::task::JoinSet;
 
 use crate::fetch::fetch_coupon;
+use crate::fetch::FetchResult;
 use crate::TOTAL_UPLOAD;
 
 #[tracing::instrument(skip_all)]
@@ -105,10 +106,22 @@ async fn fetch_all(data: Vec<(CouponSet, Vec<String>)>) -> anyhow::Result<()> {
             continue;
         }
 
-        // TODO if 404 check how many coupons are left in the set
-        let Some(coupon) = fetch_coupon(&client, selected.0.id).await? else {
-            total_errors += 1;
-            continue;
+        let coupon = match fetch_coupon(&client, selected.0.id).await? {
+            FetchResult::Coupon(coupon) => coupon,
+            FetchResult::StatusError(status) => {
+                total_errors += 1;
+
+                if status == 404 {
+                    tracing::error!(
+                        "Set {} still has {} coupons to fetch but got none from API",
+                        set_id,
+                        selected.1.len()
+                    );
+                    continue;
+                }
+
+                break;
+            }
         };
 
         selected.1.remove(&coupon.id.to_string());

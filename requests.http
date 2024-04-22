@@ -72,3 +72,46 @@ GET http://localhost:3000/metrics
 #################### Worker
 
 PUT http://localhost:3000/worker/timeout_seconds/120
+
+
+#################### Keycloak
+
+# https://www.keycloak.org/docs-api/latest/rest-api/index.html
+
+# Get token for admin use
+
+POST http://localhost:8080/realms/master/protocol/openid-connect/token
+Content-Type: application/x-www-form-urlencoded
+
+username=admin&password=admin&client_id=admin-cli&grant_type=password
+
+# Create a realm
+
+POST http://localhost:8080/admin/realms
+Authorization: bearer XX.XX.XX
+Content-Type: application/json
+
+{
+    "realm": "thestack",
+    "enabled": true
+}
+
+# Create a user for a realm
+
+POST http://localhost:8080/admin/realms/thestack/users
+Authorization: bearer XX.XX.XX
+Content-Type: application/json
+
+{
+    "firstName": "S2S User",
+    "username": "s2s_user",
+    "email": "thestack@mail.com",
+    "enabled": "true",
+    "credentials": [
+        {
+            "type": "password",
+            "value": "pass",
+            "temporary": "false"
+        }
+    ]
+}

@@ -4,6 +4,7 @@ use the_stack::model::coupon::CouponSet;
 use tokio::task::JoinSet;
 
 use crate::fetch::fetch_coupon;
+use crate::fetch::FetchResult;
 use crate::TOTAL_UPLOAD;
 
 #[tracing::instrument(skip_all)]
@@ -46,7 +47,7 @@ async fn fetch_all(data: (CouponSet, Vec<String>)) -> anyhow::Result<()> {
     let mut pct = 0.1;
 
     for _ in 0..coupons.len() {
-        let Some(coupon) = fetch_coupon(&client, set.id).await? else {
+        let FetchResult::Coupon(coupon) = fetch_coupon(&client, set.id).await? else {
             continue;
         };
 

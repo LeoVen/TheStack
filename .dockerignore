@@ -1,6 +1,7 @@
 .git/
 target/
 migrations/
+scripts/
 .gitignore
 docker-compose.yml
 Dockerfile
