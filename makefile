@@ -15,9 +15,6 @@ clippy:
 format:
 	cargo +nightly fmt
 
-down:
-	docker compose down
-
 infra:
 	docker compose up dbpg redis -d
 
@@ -37,6 +34,7 @@ console:
 	tokio-console http://127.0.0.1:5555
 
 tester:
+	. ./.env
 	cargo run --bin the_stack_tester
 
 deps:

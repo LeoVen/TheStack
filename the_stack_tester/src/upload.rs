@@ -7,8 +7,6 @@ use the_stack::model::coupon::CouponSet;
 use the_stack::model::coupon::CreateCouponSetDto;
 use uuid::Uuid;
 
-use crate::TOTAL_UPLOAD;
-
 struct IdGenerator;
 
 impl Iterator for IdGenerator {
@@ -33,14 +31,18 @@ pub async fn create_set(client: &Client, name: String) -> anyhow::Result<CouponS
     Ok(result)
 }
 
-pub async fn upload_coupons(client: &Client, set_id: i64) -> anyhow::Result<Vec<String>> {
+pub async fn upload_coupons(
+    client: &Client,
+    set_id: i64,
+    total_coupons: usize,
+) -> anyhow::Result<Vec<String>> {
     let url = Url::from_str(&format!(
         "http://localhost:3000/coupon_set/{}/upload",
         set_id
     ))?;
 
     let coupons = IdGenerator
-        .take(TOTAL_UPLOAD)
+        .take(total_coupons)
         .map(|id| id.to_string())
         .collect::<Vec<String>>();
 

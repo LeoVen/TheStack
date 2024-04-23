@@ -5,14 +5,18 @@ use tokio::task::JoinSet;
 
 use crate::fetch::fetch_coupon;
 use crate::fetch::FetchResult;
-use crate::TOTAL_UPLOAD;
+use crate::TesterConfig;
 
 #[tracing::instrument(skip_all)]
-pub async fn run_benchmark(sets: Vec<(CouponSet, Vec<String>)>) -> anyhow::Result<()> {
+pub async fn run_benchmark(
+    config: TesterConfig,
+    sets: Vec<(CouponSet, Vec<String>)>,
+) -> anyhow::Result<()> {
     let mut js = JoinSet::new();
 
     for set in sets.into_iter() {
-        js.spawn(async { fetch_all(set).await });
+        let config = config.clone();
+        js.spawn(async { fetch_all(config, set).await });
     }
 
     while let Some(result) = js.join_next().await {
@@ -29,7 +33,7 @@ pub async fn run_benchmark(sets: Vec<(CouponSet, Vec<String>)>) -> anyhow::Resul
 }
 
 #[tracing::instrument(skip_all)]
-async fn fetch_all(data: (CouponSet, Vec<String>)) -> anyhow::Result<()> {
+async fn fetch_all(config: TesterConfig, data: (CouponSet, Vec<String>)) -> anyhow::Result<()> {
     let set = data.0;
     let coupons = data.1;
 
@@ -55,7 +59,7 @@ async fn fetch_all(data: (CouponSet, Vec<String>)) -> anyhow::Result<()> {
 
         let rem = coupons.len();
 
-        if (rem as f64 / TOTAL_UPLOAD as f64) <= (1.0 - pct) {
+        if (rem as f64 / config.total_uploads as f64) <= (1.0 - pct) {
             tracing::info!(
                 "[{}] {} processed {:.2}% ({} left)",
                 set.id,

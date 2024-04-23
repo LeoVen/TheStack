@@ -8,13 +8,16 @@ use tokio::task::JoinSet;
 
 use crate::fetch::fetch_coupon;
 use crate::fetch::FetchResult;
-use crate::TOTAL_UPLOAD;
+use crate::TesterConfig;
 
 #[tracing::instrument(skip_all)]
-pub async fn run_real_world_simulation(sets: Vec<(CouponSet, Vec<String>)>) -> anyhow::Result<()> {
+pub async fn run_real_world_simulation(
+    config: TesterConfig,
+    sets: Vec<(CouponSet, Vec<String>)>,
+) -> anyhow::Result<()> {
     // Chunk coupons into sets.len() and distribute a bit of every set for each job
     let len = sets.len();
-    let chunk_size = TOTAL_UPLOAD / len;
+    let chunk_size = config.total_uploads / len;
 
     let mut chunked: Vec<(CouponSet, Vec<Vec<String>>)> = sets
         .into_iter()
