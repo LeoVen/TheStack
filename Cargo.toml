@@ -14,7 +14,12 @@ itertools = "0.12.1"
 password-hash = { version = "0.5.0", features = ["std"] }
 prometheus = "0.13.3"
 rand = "0.8.5"
-redis = { version = "0.25.1", features = ["tokio-rustls-comp", "json"] }
+redis = { version = "0.25.1", features = [
+    "tokio-rustls-comp",
+    "aio",
+    "connection-manager",
+    "json",
+] }
 redis-macros = "0.2.1"
 reqwest = { version = "0.12.3", features = ["json"] }
 serde = { version = "1.0.197", features = ["derive"] }

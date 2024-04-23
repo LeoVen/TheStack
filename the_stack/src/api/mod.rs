@@ -1,4 +1,5 @@
 pub mod coupon;
+pub mod dto;
 pub mod metrics;
 pub mod userlogin;
 pub mod worker;

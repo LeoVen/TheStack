@@ -70,7 +70,7 @@ pub async fn cleanup_worker(
         };
 
         if keys.is_empty() {
-            let timeout = *timeout.lock().unwrap();
+            let timeout = *timeout.lock().expect("Could not acquire lock for timeout");
             tracing::info!(timeout, "nothing to cleanup and now waiting");
             tokio::time::sleep(Duration::from_secs(timeout)).await;
             continue;
@@ -99,7 +99,7 @@ pub async fn cleanup_worker(
 
         let coupons_to_delete = coupons_to_delete
             .iter()
-            .map(|value| Uuid::try_parse(value).unwrap())
+            .map(|value| Uuid::try_parse(value).expect("Could not parse UUID"))
             .collect::<Vec<Uuid>>();
 
         let result = coupon_database.delete_coupons(&coupons_to_delete).await;
@@ -112,7 +112,7 @@ pub async fn cleanup_worker(
             }
         }
 
-        let timeout = *timeout.lock().unwrap();
+        let timeout = *timeout.lock().expect("Could not acquire lock for timeout");
         tracing::info!(timeout, "cleaning up finished and now waiting");
         tokio::time::sleep(Duration::from_secs(timeout)).await;
     }

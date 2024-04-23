@@ -12,17 +12,13 @@ pub struct CouponSet {
     pub created_at: chrono::DateTime<chrono::Utc>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
-pub struct CouponSetStatus {
-    pub id: i64,
-    pub name: String,
-    pub created_at: chrono::DateTime<chrono::Utc>,
-    pub total_coupons: i64,
-}
-
 impl CouponSet {
     pub fn set_key(id: i64) -> String {
         format!("thestack::coupons::{}", id)
+    }
+
+    pub fn set_key_prefix() -> &'static str {
+        "thestack::coupons::*"
     }
 
     pub fn used_key(id: i64) -> String {
@@ -32,6 +28,13 @@ impl CouponSet {
     pub fn used_key_prefix() -> &'static str {
         "thestack::used::*"
     }
+
+    pub fn extract_set_id(key: &str) -> i64 {
+        // TODO how to better treat -1 ids
+        let id_str = key.split("::").nth(2).unwrap_or("-1");
+
+        str::parse(id_str).unwrap_or(-1)
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow, FromRedisValue, ToRedisArgs)]
@@ -40,7 +43,16 @@ pub struct Coupon {
     pub set_id: i64,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct CreateCouponSetDto {
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
+pub struct CouponSetDatabaseStatus {
+    pub id: i64,
     pub name: String,
+    pub created_at: chrono::DateTime<chrono::Utc>,
+    pub total_coupons: i64,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct CouponSetCacheStatus {
+    pub id: i64,
+    pub total_coupons: i64,
 }

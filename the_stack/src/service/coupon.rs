@@ -1,5 +1,7 @@
 use uuid::Uuid;
 
+use crate::api::dto::CouponStatusResponseDto;
+use crate::api::dto::CreateCouponSetDto;
 use crate::cache::coupon::CouponCache;
 use crate::database::coupon::CouponRepository;
 use crate::error::service::ServiceError;
@@ -7,8 +9,6 @@ use crate::error::service::ServiceResult;
 use crate::metrics::Metrics;
 use crate::model::coupon::Coupon;
 use crate::model::coupon::CouponSet;
-use crate::model::coupon::CouponSetStatus;
-use crate::model::coupon::CreateCouponSetDto;
 
 pub struct CouponService {
     repo: CouponRepository,
@@ -84,7 +84,7 @@ impl CouponService {
 
         self.metrics.cache_miss.inc();
 
-        // TODO this can be improved
+        // TODO add redis lock to the batch_insert operations
 
         let coupons = self.repo.pop_coupons(set_id, 1000).await?;
 
@@ -112,8 +112,32 @@ impl CouponService {
     }
 
     #[tracing::instrument(skip_all)]
-    pub async fn set_status(&self) -> ServiceResult<Vec<CouponSetStatus>> {
-        let result = self.repo.set_status().await?;
+    pub async fn set_status(&self) -> ServiceResult<Vec<CouponStatusResponseDto>> {
+        let mut cache = self.cache.clone();
+
+        let cache = cache.set_status().await?;
+        let database = self.repo.set_status().await?;
+
+        let mut result = vec![];
+
+        for status in database.into_iter() {
+            let id = status.id;
+
+            let in_cache = cache
+                .iter()
+                .find(|c| c.id == id)
+                .unwrap_or(&Default::default())
+                .total_coupons;
+
+            result.push(CouponStatusResponseDto {
+                id,
+                name: status.name,
+                created_at: status.created_at,
+                total_cache: in_cache,
+                total_database: status.total_coupons,
+            });
+        }
+
         Ok(result)
     }
 }

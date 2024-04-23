@@ -5,6 +5,8 @@ use axum::extract::State;
 use axum::Json;
 use axum::Router;
 
+use crate::api::dto::CouponStatusResponseDto;
+use crate::api::dto::CreateCouponSetDto;
 use crate::api::AppState;
 use crate::cache::coupon::CouponCache;
 use crate::database::coupon::CouponRepository;
@@ -12,8 +14,6 @@ use crate::error::api::ApiError;
 use crate::error::api::ApiResult;
 use crate::model::coupon::Coupon;
 use crate::model::coupon::CouponSet;
-use crate::model::coupon::CouponSetStatus;
-use crate::model::coupon::CreateCouponSetDto;
 use crate::service::coupon::CouponService;
 
 struct CouponAppState {
@@ -77,7 +77,7 @@ async fn create_set(
 #[tracing::instrument(skip_all)]
 async fn set_status(
     State(ctx): State<Arc<CouponAppState>>,
-) -> ApiResult<Json<Vec<CouponSetStatus>>> {
+) -> ApiResult<Json<Vec<CouponStatusResponseDto>>> {
     let result = ctx.service.set_status().await?;
     Ok(Json(result))
 }

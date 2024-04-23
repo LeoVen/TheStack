@@ -7,6 +7,7 @@ use redis::Direction;
 use crate::error::cache::CacheResult;
 use crate::model::coupon::Coupon;
 use crate::model::coupon::CouponSet;
+use crate::model::coupon::CouponSetCacheStatus;
 
 #[derive(Clone)]
 pub struct CouponCache {
@@ -56,6 +57,35 @@ impl CouponCache {
 
     pub async fn pop_coupon_list(&mut self, key: &str) -> CacheResult<Vec<String>> {
         let result = self.conn.lpop(key, NonZeroUsize::new(10000)).await?;
+
+        Ok(result)
+    }
+
+    pub async fn set_status(&mut self) -> CacheResult<Vec<CouponSetCacheStatus>> {
+        let keys = self
+            .conn
+            .keys::<_, Vec<String>>(CouponSet::set_key_prefix())
+            .await?;
+
+        tracing::info!("found {} keys", keys.len());
+
+        let mut pipe = redis::Pipeline::with_capacity(keys.len());
+
+        for key in keys.iter() {
+            pipe.llen(key);
+        }
+
+        let lengths: Vec<i64> = pipe.query_async(&mut self.conn).await?;
+
+        // Assume that keys.len() == lengths.len()
+        let result = keys
+            .into_iter()
+            .zip(lengths)
+            .map(|(key, len)| CouponSetCacheStatus {
+                id: CouponSet::extract_set_id(&key),
+                total_coupons: len,
+            })
+            .collect();
 
         Ok(result)
     }

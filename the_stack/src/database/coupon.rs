@@ -3,11 +3,11 @@ use sqlx::Pool;
 use sqlx::Postgres;
 use uuid::Uuid;
 
+use crate::api::dto::CreateCouponSetDto;
 use crate::error::database::DatabaseResult;
 use crate::model::coupon::Coupon;
 use crate::model::coupon::CouponSet;
-use crate::model::coupon::CouponSetStatus;
-use crate::model::coupon::CreateCouponSetDto;
+use crate::model::coupon::CouponSetDatabaseStatus;
 
 static POP_COUPONS_QUERY: &str = r"
 WITH upd AS
@@ -83,7 +83,7 @@ impl CouponRepository {
         Ok(result)
     }
 
-    pub async fn set_status(&self) -> DatabaseResult<Vec<CouponSetStatus>> {
+    pub async fn set_status(&self) -> DatabaseResult<Vec<CouponSetDatabaseStatus>> {
         let result = sqlx::query_as(
             "select *, (select count(*) from coupon c where c.set_id = s.id) as total_coupons from coupon_set s",
         )

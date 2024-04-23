@@ -1,6 +1,6 @@
 use std::collections::HashSet;
+use std::time::Duration;
 
-use anyhow::Error;
 use itertools::Itertools;
 use rand::Rng;
 use the_stack::model::coupon::CouponSet;
@@ -11,7 +11,7 @@ use crate::fetch::FetchResult;
 use crate::TesterConfig;
 
 #[tracing::instrument(skip_all)]
-pub async fn run_real_world_simulation(
+pub async fn simulation(
     config: TesterConfig,
     sets: Vec<(CouponSet, Vec<String>)>,
 ) -> anyhow::Result<()> {
@@ -49,13 +49,18 @@ pub async fn run_real_world_simulation(
 
     let mut js = JoinSet::new();
     for set in chunked_sets.into_iter() {
-        js.spawn(async { fetch_all(set).await });
+        let config = config.clone();
+        js.spawn(async { fetch_all(config, set).await });
     }
 
     while let Some(result) = js.join_next().await {
         match result {
             Ok(ret) => match ret {
-                Ok(_) => {}
+                Ok(data) => {
+                    for data in data.into_iter() {
+                        tracing::error!("Set {} still has {} coupons", data.0.id, data.1.len());
+                    }
+                }
                 Err(err) => tracing::error!("{}", err),
             },
             Err(err) => tracing::error!("{}", err),
@@ -66,7 +71,10 @@ pub async fn run_real_world_simulation(
 }
 
 #[tracing::instrument(skip_all)]
-async fn fetch_all(data: Vec<(CouponSet, Vec<String>)>) -> anyhow::Result<()> {
+async fn fetch_all(
+    config: TesterConfig,
+    data: Vec<(CouponSet, Vec<String>)>,
+) -> anyhow::Result<Vec<(CouponSet, HashSet<String>)>> {
     let total_coupons = data.iter().fold(0, |acc, (_, coupons)| acc + coupons.len());
 
     tracing::info!(
@@ -87,12 +95,14 @@ async fn fetch_all(data: Vec<(CouponSet, Vec<String>)>) -> anyhow::Result<()> {
 
     loop {
         if data.is_empty() {
+            tracing::info!("Data is empty. Stopping...");
             break;
         }
 
         // TODO add total_errors to env var
-        if total_errors > 100 {
-            return Err(Error::msg("TOO MANY ERRORS!"));
+        if total_errors > 1000 {
+            tracing::error!("TOO MANY ERRORS!");
+            return Ok(data);
         }
 
         // Randomly select a coupon set to extract from
@@ -115,12 +125,7 @@ async fn fetch_all(data: Vec<(CouponSet, Vec<String>)>) -> anyhow::Result<()> {
                 total_errors += 1;
 
                 if status == 404 {
-                    tracing::error!(
-                        "Set {} still has {} coupons to fetch but got none from API",
-                        set_id,
-                        selected.1.len()
-                    );
-                    continue;
+                    continue; // TODO should never happen
                 }
 
                 break;
@@ -137,12 +142,14 @@ async fn fetch_all(data: Vec<(CouponSet, Vec<String>)>) -> anyhow::Result<()> {
         }
 
         // // Random timeout to simulate "real world usage" :D
-        // let millis = {
-        //     let mut rng = rand::thread_rng();
-        //     rng.gen_range(1..100)
-        // };
-        // tokio::time::sleep(Duration::from_millis(millis)).await;
+        if config.timeout > 0 {
+            let millis = {
+                let mut rng = rand::thread_rng();
+                rng.gen_range(0..config.timeout)
+            };
+            tokio::time::sleep(Duration::from_millis(millis)).await;
+        }
     }
 
-    Ok(())
+    Ok(data)
 }

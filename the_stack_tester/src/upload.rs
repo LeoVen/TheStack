@@ -3,8 +3,8 @@ use std::str::FromStr;
 use anyhow::Context;
 use reqwest::Client;
 use reqwest::Url;
+use the_stack::api::dto::CreateCouponSetDto;
 use the_stack::model::coupon::CouponSet;
-use the_stack::model::coupon::CreateCouponSetDto;
 use uuid::Uuid;
 
 struct IdGenerator;

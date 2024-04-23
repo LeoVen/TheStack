@@ -63,6 +63,9 @@ Content-Type: application/json
     "7bb7684f-934b-4125-9577-29dabec9b071"
 ]
 
+# All set status
+GET http://localhost:3000/coupon_set/status
+
 
 #################### Metrics
 

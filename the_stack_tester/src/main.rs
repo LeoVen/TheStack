@@ -77,7 +77,7 @@ async fn main() -> anyhow::Result<()> {
 
     match config.mode {
         TesterMode::Benchmark => bench::run_benchmark(config, sets).await?,
-        TesterMode::Simulation => runner::run_real_world_simulation(config, sets).await?,
+        TesterMode::Simulation => runner::simulation(config, sets).await?,
     }
 
     Ok(())

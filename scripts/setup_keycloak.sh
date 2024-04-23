@@ -12,6 +12,8 @@ USER_PASSWORD=${KC_SETUP_USER_PASSWORD}
 
 curl --retry 20 -f --retry-all-errors --retry-delay 2 -s -o /dev/null "http://localhost:8080/health"
 
+sleep 2 # reduce flakyness
+
 { echo "Getting admin credentials"; } 2> /dev/null
 
 ACCESS_TOKEN=$(curl -s --request POST \

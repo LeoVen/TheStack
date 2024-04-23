@@ -33,8 +33,5 @@ pub async fn fetch_coupon(client: &Client, set_id: i64) -> anyhow::Result<FetchR
         return Ok(FetchResult::Coupon(coupon));
     }
 
-    let body: serde_json::Value = response.json().await?;
-    tracing::warn!("Request Error [{}]: {}", status, body);
-
     Ok(FetchResult::StatusError(status))
 }
