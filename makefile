@@ -1,4 +1,4 @@
-up: clippy format build
+up: clippy format build gen_rsa prepare_env
 	docker compose up -d
 	. ./scripts/sqlx_migrate.sh
 	. ./scripts/setup_keycloak.sh
@@ -37,6 +37,13 @@ tester:
 	. ./.env
 	cargo run --bin the_stack_tester
 
+prepare_env:
+	. ./scripts/prepare_env.sh
+
+gen_rsa:
+	. ./scripts/create_rsa_kp.sh
+
 deps:
 	cargo install sqlx-cli cargo-watch cargo-expand tokio-console
-	sudo apt install -y postgresql-client redis-tools curl jq
+	sudo apt install -y postgresql-client redis-tools curl jq sed
+	chmod -R +x ./scripts

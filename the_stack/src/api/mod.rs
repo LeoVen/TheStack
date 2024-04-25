@@ -1,5 +1,6 @@
 pub mod coupon;
 pub mod dto;
+pub mod files;
 pub mod metrics;
 pub mod userlogin;
 pub mod worker;
@@ -22,9 +23,13 @@ use serde::Deserialize;
 use serde::Serialize;
 use sqlx::Pool;
 use sqlx::Postgres;
+use tower_cookies::CookieManagerLayer;
 use tower_http::trace::TraceLayer;
 
+use crate::jwt::JWTService;
 use crate::metrics::Metrics;
+
+pub static AUTH_COOKIE: &'static str = "auth-token";
 
 #[derive(Serialize, Deserialize, Debug)]
 struct AxumApiConfig {
@@ -38,6 +43,7 @@ pub struct AppState {
     pub cache: MultiplexedConnection,
     pub metrics: Metrics,
     pub timeout: Arc<Mutex<u64>>,
+    pub jwt_service: JWTService,
 }
 
 #[tracing::instrument(skip(ctx))]
@@ -49,6 +55,7 @@ pub async fn setup(env: &str, ctx: AppState) -> Result<()> {
         tracing::info!(config = config_str);
     }
 
+    let cookies = CookieManagerLayer::new();
     let metrics = ctx.metrics.clone();
     let trace_layer = TraceLayer::new_for_http()
         .make_span_with(|request: &Request<Body>| {
@@ -83,15 +90,19 @@ pub async fn setup(env: &str, ctx: AppState) -> Result<()> {
         );
 
     let coupons = coupon::router(ctx.clone()).layer(trace_layer.clone());
+    let files = files::router();
     let metrics = metrics::router();
-    let userlogin = userlogin::router(ctx.clone()).layer(trace_layer.clone());
+    let userlogin = userlogin::router(ctx.clone())
+        .layer(trace_layer.clone())
+        .layer(cookies.clone());
     let workers = worker::router(ctx.clone()).layer(trace_layer.clone());
 
     let app = Router::new()
         .merge(metrics)
         .merge(coupons)
         .merge(workers)
-        .merge(userlogin);
+        .merge(userlogin)
+        .fallback_service(files);
 
     let listener =
         tokio::net::TcpListener::bind(SocketAddrV4::new(Ipv4Addr::new(0, 0, 0, 0), config.port))

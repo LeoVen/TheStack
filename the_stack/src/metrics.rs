@@ -1,4 +1,3 @@
-use anyhow::Result;
 use prometheus::Counter;
 use prometheus::Histogram;
 use prometheus::HistogramOpts;
@@ -23,7 +22,9 @@ pub struct Metrics {
 }
 
 #[tracing::instrument]
-pub fn setup(env: &str) -> Result<Metrics> {
+pub fn setup(env: &str) -> anyhow::Result<Metrics> {
+    tracing::info!("Setting up metrics");
+
     let r = prometheus::default_registry();
 
     let api_count = Counter::with_opts(Opts::new("api_count", "Count of API requests"))?;

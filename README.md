@@ -9,7 +9,7 @@ The Rust stack for Web
 
 ## Features
 
-The Stack Service
+### The Stack Service
 
 * REST API
   * Coupon
@@ -32,7 +32,13 @@ The Stack Service
   * Cleanup worker job
     * Used coupons in cache are cleared from the database
 
-The Stack Tester
+### The Stack Tester
 
 * Fetches coupons randomly from a set of coupon sets
 * Tests the resilience of concurrent operations
+
+## Scripts
+
+* Use makefile as entry point
+* All scripts are meant to be run at the root of the project
+* Generate RSA private and public keys for JWT

@@ -1,7 +1,5 @@
 use std::fmt::Display;
 
-use password_hash::Error;
-
 use crate::error::cache::CacheError;
 use crate::error::database::DatabaseError;
 
@@ -55,10 +53,10 @@ impl From<uuid::Error> for ServiceError {
     }
 }
 
-impl From<Error> for ServiceError {
-    fn from(err: Error) -> Self {
+impl From<password_hash::Error> for ServiceError {
+    fn from(err: password_hash::Error) -> Self {
         match err {
-            Error::Password => ServiceError::Unauthorized,
+            password_hash::Error::Password => ServiceError::Unauthorized,
             _ => ServiceError::Internal(err.into()),
         }
     }

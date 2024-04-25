@@ -30,11 +30,11 @@ impl UserLoginService {
         Ok(())
     }
 
-    pub async fn validate_user(&self, email: String, password: String) -> ServiceResult<bool> {
+    pub async fn validate_user(&self, email: &str, password: &str) -> ServiceResult<()> {
         let dbuser = self.repo.get_by_email(email).await?;
 
-        verify_password(&dbuser.password, &password)?;
+        verify_password(&dbuser.password, password)?;
 
-        Ok(true)
+        Ok(())
     }
 }

@@ -7,6 +7,7 @@ async fn main() -> anyhow::Result<()> {
     let env = the_stack::tracing::setup();
     let metrics = the_stack::metrics::setup(&env)?;
     let db = the_stack::database::setup(&env).await?;
+    let jwt_service: the_stack::jwt::JWTService = the_stack::jwt::setup()?;
     let cache = the_stack::cache::setup(&env).await?;
     let timeout = the_stack::jobs::worker::setup(cache.clone(), db.clone(), metrics.clone())?;
 
@@ -17,6 +18,7 @@ async fn main() -> anyhow::Result<()> {
             cache,
             metrics,
             timeout,
+            jwt_service,
         },
     )
     .await?;

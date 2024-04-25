@@ -48,9 +48,9 @@ impl Display for ApiError {
 impl IntoResponse for ApiError {
     fn into_response(self) -> Response {
         match self {
+            // https://docs.rs/anyhow/latest/anyhow/struct.Error.html#display-representations
             ApiError::Internal(error) => {
-                let error = error.to_string();
-                tracing::error!(error, "Internal Server Error");
+                tracing::error!("Internal Server Error: {:#}", error);
 
                 (
                     StatusCode::INTERNAL_SERVER_ERROR,

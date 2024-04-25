@@ -24,7 +24,7 @@ impl UserLoginRepository {
         Ok(result.rows_affected())
     }
 
-    pub async fn get_by_email(&self, email: String) -> DatabaseResult<UserLogin> {
+    pub async fn get_by_email(&self, email: &str) -> DatabaseResult<UserLogin> {
         let result = sqlx::query_as("select * from userlogin where email = $1")
             .bind(email)
             .fetch_one(&self.conn)
