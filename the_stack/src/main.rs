@@ -2,7 +2,7 @@ use the_stack::api::AppState;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    dotenv::dotenv().ok();
+    dotenvy::dotenv()?;
 
     let env = the_stack::tracing::setup();
     let metrics = the_stack::metrics::setup(&env)?;

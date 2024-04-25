@@ -7,7 +7,7 @@ edition = "2021"
 
 [dependencies]
 the_stack = { path = "../the_stack" }
-dotenv = { workspace = true }
+dotenvy = { workspace = true }
 envy = { workspace = true }
 console-subscriber = { workspace = true }
 itertools = { workspace = true }
