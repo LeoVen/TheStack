@@ -8,13 +8,12 @@ use serde::Serialize;
 use tower_cookies::Cookie;
 use tower_cookies::Cookies;
 
+use super::AUTH_COOKIE;
 use crate::api::AppState;
 use crate::database::userlogin::UserLoginRepository;
 use crate::error::api::ApiResult;
 use crate::jwt::JWTService;
 use crate::service::userlogin::UserLoginService;
-
-use super::AUTH_COOKIE;
 
 struct UserLoginState {
     service: UserLoginService,

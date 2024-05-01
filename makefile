@@ -1,4 +1,4 @@
-up: clippy format build gen_rsa prepare_env
+up: gen_rsa prepare_env clippy format build
 	docker compose up -d
 	. ./scripts/sqlx_migrate.sh
 	. ./scripts/setup_keycloak.sh
@@ -44,6 +44,7 @@ gen_rsa:
 	. ./scripts/create_rsa_kp.sh
 
 deps:
+	sudo apt install -y postgresql-client redis-tools curl jq sed openssh-client libssl-dev pkg-config
 	cargo install sqlx-cli cargo-watch cargo-expand tokio-console
-	sudo apt install -y postgresql-client redis-tools curl jq sed
+	rustup install nightly
 	chmod -R +x ./scripts

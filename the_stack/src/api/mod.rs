@@ -29,7 +29,7 @@ use tower_http::trace::TraceLayer;
 use crate::jwt::JWTService;
 use crate::metrics::Metrics;
 
-pub static AUTH_COOKIE: &'static str = "auth-token";
+pub static AUTH_COOKIE: &str = "auth-token";
 
 #[derive(Serialize, Deserialize, Debug)]
 struct AxumApiConfig {
