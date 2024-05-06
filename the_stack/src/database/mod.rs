@@ -2,7 +2,6 @@ pub mod coupon;
 pub mod userlogin;
 
 use anyhow::Context;
-use anyhow::Result;
 use serde::Deserialize;
 use serde::Serialize;
 use sqlx::postgres::PgConnectOptions;
@@ -27,7 +26,7 @@ struct DatabasePostgresConfig {
 }
 
 #[tracing::instrument]
-pub async fn setup(env: &str) -> Result<Pool<Postgres>> {
+pub async fn setup(env: &str) -> anyhow::Result<Pool<Postgres>> {
     tracing::info!("Setting up database");
 
     let config = envy::from_env::<DatabasePostgresConfig>().context("Failed to get env vars")?;

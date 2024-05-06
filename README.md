@@ -1,6 +1,6 @@
 # TheStack
 
-The Rust stack for Web
+A Rust stack, exploring Front-end, Back-end, Infra, Dev-Ops, Cloud all in one place.
 
 ## Required Tooling
 

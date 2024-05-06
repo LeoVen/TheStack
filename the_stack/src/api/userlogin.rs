@@ -4,12 +4,12 @@ use axum::extract::State;
 use axum::Json;
 use axum::Router;
 use serde::Deserialize;
-use serde::Serialize;
+use serde_json::json;
 use tower_cookies::Cookie;
 use tower_cookies::Cookies;
 
-use super::AUTH_COOKIE;
 use crate::api::AppState;
+use crate::api::AUTH_COOKIE;
 use crate::database::userlogin::UserLoginRepository;
 use crate::error::api::ApiResult;
 use crate::jwt::JWTService;
@@ -57,17 +57,12 @@ struct UserLoginDto {
     pub password: String,
 }
 
-#[derive(Serialize)]
-struct UserLoginResponseDto {
-    pub ok: bool,
-}
-
 #[tracing::instrument(skip_all)]
 async fn login_user(
     cookies: Cookies,
     State(ctx): State<Arc<UserLoginState>>,
     Json(payload): Json<UserLoginDto>,
-) -> ApiResult<Json<UserLoginResponseDto>> {
+) -> ApiResult<Json<serde_json::Value>> {
     ctx.service
         .validate_user(&payload.email, &payload.password)
         .await?;
@@ -76,5 +71,5 @@ async fn login_user(
 
     cookies.add(Cookie::new(AUTH_COOKIE, auth_token));
 
-    Ok(Json(UserLoginResponseDto { ok: true }))
+    Ok(Json(json!({ "result": { "success": true } })))
 }
