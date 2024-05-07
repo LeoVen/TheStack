@@ -1,8 +1,12 @@
+use tokio_retry::strategy::jitter;
+use tokio_retry::strategy::ExponentialBackoff;
+use tokio_retry::Retry;
 use uuid::Uuid;
 
 use crate::api::dto::CouponStatusResponseDto;
 use crate::api::dto::CreateCouponSetDto;
 use crate::cache::coupon::CouponCache;
+use crate::cache::lock::DistributedLock;
 use crate::database::coupon::CouponRepository;
 use crate::error::service::ServiceError;
 use crate::error::service::ServiceResult;
@@ -10,22 +14,34 @@ use crate::metrics::Metrics;
 use crate::model::coupon::Coupon;
 use crate::model::coupon::CouponSet;
 
+use super::BatchInsertConfig;
+
 pub struct CouponService {
     repo: CouponRepository,
     cache: CouponCache,
     metrics: Metrics,
+    lock: DistributedLock,
+    batch_config: BatchInsertConfig,
 }
 
 impl CouponService {
-    pub fn new(repo: CouponRepository, cache: CouponCache, metrics: Metrics) -> Self {
+    pub fn new(
+        repo: CouponRepository,
+        cache: CouponCache,
+        metrics: Metrics,
+        lock: DistributedLock,
+        batch_config: BatchInsertConfig,
+    ) -> Self {
         Self {
             repo,
             cache,
             metrics,
+            lock,
+            batch_config,
         }
     }
 
-    #[tracing::instrument(skip(self))]
+    #[tracing::instrument(skip(self, payload))]
     pub async fn spawn_upload_job(&self, set_id: i64, payload: Vec<String>) {
         // TODO time how long this takes, for fun
 
@@ -84,22 +100,59 @@ impl CouponService {
 
         self.metrics.cache_miss.inc();
 
-        // TODO add redis lock to the batch_insert operations
+        if let Some(lock) = self
+            .lock
+            .lock(&format!("{}{}", self.batch_config.lock_prefix, set_id))
+            .await
+        {
+            let unlock = || async {
+                self.lock.unlock(lock).await;
+            };
 
-        let coupons = self.repo.pop_coupons(set_id, 1000).await?;
+            let mut coupons = self
+                .repo
+                .pop_coupons(set_id, self.batch_config.insert_total)
+                .await?;
 
-        cache.batch_insert(set_id, &coupons).await?;
+            if coupons.is_empty() {
+                unlock().await;
+                return self.pop_from_cache(set_id).await;
+            }
 
-        let cached = cache.pop_coupon(set_id).await?;
+            let coupon = coupons.pop().ok_or(ServiceError::NotFound)?;
 
-        if let Some(cached) = cached {
+            cache.batch_insert(set_id, &coupons).await?;
+
+            unlock().await;
+
             return Ok(Coupon {
-                id: Uuid::try_parse(&cached)?,
-                set_id,
+                id: coupon.id,
+                set_id: coupon.set_id,
             });
         }
 
-        Err(ServiceError::NotFound)
+        // Retry since some other thread might be inserting coupons at the same time
+        let coupon = Retry::spawn(
+            ExponentialBackoff::from_millis(100).map(jitter).take(3),
+            || async { self.pop_from_cache(set_id).await },
+        )
+        .await?;
+
+        Ok(coupon)
+    }
+
+    async fn pop_from_cache(&self, set_id: i64) -> ServiceResult<Coupon> {
+        let mut cache = self.cache.clone();
+
+        let cached = cache.pop_coupon(set_id).await?;
+
+        match cached {
+            Some(cached) => Ok(Coupon {
+                id: Uuid::try_parse(&cached)?,
+                set_id,
+            }),
+            None => Err(ServiceError::NotFound),
+        }
     }
 
     #[tracing::instrument(skip(self))]

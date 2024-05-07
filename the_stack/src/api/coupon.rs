@@ -35,6 +35,8 @@ pub fn router(ctx: AppState) -> Router {
                     CouponRepository::new(ctx.db),
                     CouponCache::new(ctx.cache),
                     ctx.metrics.clone(),
+                    ctx.lock,
+                    ctx.batch_config,
                 ),
             })
             .into(),

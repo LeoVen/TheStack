@@ -45,9 +45,9 @@ pub async fn simulation(
                             .or_insert(coupons);
                     }
                 }
-                Err(err) => tracing::error!("{}", err),
+                Err(err) => tracing::error!("{:#}", err),
             },
-            Err(err) => tracing::error!("{}", err),
+            Err(err) => tracing::error!("{:#}", err),
         }
     }
 
@@ -71,7 +71,9 @@ async fn fetch_all(
         .map(|set_id| (*set_id, BTreeSet::new()))
         .collect();
 
-    let client = reqwest::Client::new();
+    let client = reqwest::Client::builder()
+        .timeout(Duration::from_secs(20))
+        .build()?;
 
     let mut pct = 0.1;
     let mut gotten = 0;

@@ -26,8 +26,10 @@ use sqlx::Postgres;
 use tower_cookies::CookieManagerLayer;
 use tower_http::trace::TraceLayer;
 
+use crate::cache::lock::DistributedLock;
 use crate::jwt::JWTService;
 use crate::metrics::Metrics;
+use crate::service::BatchInsertConfig;
 
 pub static AUTH_COOKIE: &str = "auth-token";
 
@@ -44,6 +46,8 @@ pub struct AppState {
     pub metrics: Metrics,
     pub timeout: Arc<Mutex<u64>>,
     pub jwt_service: JWTService,
+    pub lock: DistributedLock,
+    pub batch_config: BatchInsertConfig,
 }
 
 #[tracing::instrument(skip(ctx))]

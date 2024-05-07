@@ -1,4 +1,5 @@
 pub mod coupon;
+pub mod lock;
 
 use anyhow::Context;
 use anyhow::Result;
@@ -20,7 +21,7 @@ struct RedisConfig {
 }
 
 #[tracing::instrument]
-pub async fn setup(env: &str) -> Result<MultiplexedConnection> {
+pub async fn setup(env: &str) -> Result<(MultiplexedConnection, lock::DistributedLock)> {
     tracing::info!("Setting up redis cache");
 
     let config = envy::from_env::<RedisConfig>().context("Failed to get env vars")?;
@@ -31,7 +32,7 @@ pub async fn setup(env: &str) -> Result<MultiplexedConnection> {
     }
 
     let client = redis::Client::open(ConnectionInfo {
-        addr: ConnectionAddr::Tcp(config.host, config.port),
+        addr: ConnectionAddr::Tcp(config.host.clone(), config.port),
         redis: RedisConnectionInfo {
             db: config.database,
             username: None,
@@ -45,7 +46,9 @@ pub async fn setup(env: &str) -> Result<MultiplexedConnection> {
         .await
         .context("Failed to get redis multiplexed connection")?;
 
+    let lock = lock::DistributedLock::new(&config);
+
     tracing::info!("Redis cache setup finished");
 
-    Ok(conn)
+    Ok((conn, lock))
 }
