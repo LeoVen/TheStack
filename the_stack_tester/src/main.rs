@@ -3,6 +3,7 @@ pub mod fetch;
 pub mod runner;
 pub mod upload;
 
+use std::net::Ipv4Addr;
 use std::time::Duration;
 
 use anyhow::Context;
@@ -49,6 +50,7 @@ async fn main() -> anyhow::Result<()> {
         .with(
             console_subscriber::ConsoleLayer::builder()
                 .retention(Duration::from_secs(60))
+                .server_addr((Ipv4Addr::LOCALHOST, 5454))
                 .spawn(),
         )
         .init();

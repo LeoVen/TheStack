@@ -55,7 +55,6 @@ pub async fn cleanup_worker(
 
     loop {
         tracing::info!("cleaning up used coupons");
-        metrics.job_cleanup.inc();
 
         let keys = match cache
             .keys::<_, Vec<String>>(CouponSet::used_key_prefix())
@@ -75,6 +74,9 @@ pub async fn cleanup_worker(
             tokio::time::sleep(Duration::from_secs(timeout)).await;
             continue;
         }
+
+        // Only inc when we are actually cleaning up something
+        metrics.job_cleanup.inc();
 
         tracing::info!("cleaning up {} coupon sets", &keys.len());
 

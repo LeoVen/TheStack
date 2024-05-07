@@ -1,8 +1,9 @@
-use std::collections::HashSet;
+use std::collections::BTreeMap;
+use std::collections::BTreeSet;
 use std::time::Duration;
 
-use itertools::Itertools;
 use rand::Rng;
+use reqwest::StatusCode;
 use the_stack::model::coupon::CouponSet;
 use tokio::task::JoinSet;
 
@@ -10,55 +11,38 @@ use crate::fetch::fetch_coupon;
 use crate::fetch::FetchResult;
 use crate::TesterConfig;
 
+type SetData = BTreeMap<i64, BTreeSet<String>>;
+
 #[tracing::instrument(skip_all)]
 pub async fn simulation(
     config: TesterConfig,
     sets: Vec<(CouponSet, Vec<String>)>,
 ) -> anyhow::Result<()> {
-    // Chunk coupons into sets.len() and distribute a bit of every set for each job
-    let len = sets.len();
-    let chunk_size = config.total_uploads / len;
-
-    let mut chunked: Vec<(CouponSet, Vec<Vec<String>>)> = sets
-        .into_iter()
-        .map(|(set, coupons)| {
-            let chunks = coupons
-                .into_iter()
-                .chunks(chunk_size)
-                .into_iter()
-                .map(|c| c.collect())
-                .collect();
-
-            (set, chunks)
-        })
-        .collect();
-
-    let mut chunked_sets: Vec<Vec<(CouponSet, Vec<String>)>> = vec![];
-
-    for _ in 0..len {
-        let mut nth_chunk = vec![];
-
-        for chunk in chunked.iter_mut() {
-            let coupons = chunk.1.pop().unwrap_or_default();
-
-            nth_chunk.push((chunk.0.clone(), coupons));
-        }
-
-        chunked_sets.push(nth_chunk);
-    }
+    let reference: Vec<i64> = sets.iter().map(|set_data| set_data.0.id).collect();
+    let set_data: SetData = sets.into_iter().fold(BTreeMap::new(), |mut acc, set| {
+        acc.entry(set.0.id)
+            .or_insert(BTreeSet::from_iter(set.1.into_iter()));
+        acc
+    });
 
     let mut js = JoinSet::new();
-    for set in chunked_sets.into_iter() {
+    for id in 0..config.total_sets {
         let config = config.clone();
-        js.spawn(async { fetch_all(config, set).await });
+        let reference = reference.clone();
+        js.spawn(async move { fetch_all(id, config, reference).await });
     }
+
+    let mut merged_data: SetData = BTreeMap::new();
 
     while let Some(result) = js.join_next().await {
         match result {
             Ok(ret) => match ret {
-                Ok(data) => {
-                    for data in data.into_iter() {
-                        tracing::error!("Set {} still has {} coupons", data.0.id, data.1.len());
+                Ok(result_data) => {
+                    for (set_id, coupons) in result_data.into_iter() {
+                        merged_data
+                            .entry(set_id)
+                            .and_modify(|value| value.extend(coupons.clone().into_iter()))
+                            .or_insert(coupons);
                     }
                 }
                 Err(err) => tracing::error!("{}", err),
@@ -67,81 +51,85 @@ pub async fn simulation(
         }
     }
 
+    if set_data != merged_data {
+        tracing::error!("Fetched data does not equal to uploaded data");
+    }
+
+    tracing::info!("SUCCESS! Everything matches!");
+
     Ok(())
 }
 
 #[tracing::instrument(skip_all)]
 async fn fetch_all(
+    id: usize,
     config: TesterConfig,
-    data: Vec<(CouponSet, Vec<String>)>,
-) -> anyhow::Result<Vec<(CouponSet, HashSet<String>)>> {
-    let total_coupons = data.iter().fold(0, |acc, (_, coupons)| acc + coupons.len());
-
-    tracing::info!(
-        "Fetching randomly from {} chunked sets with {} coupons in total",
-        data.len(),
-        total_coupons,
-    );
-
-    let mut data: Vec<(CouponSet, HashSet<String>)> = data
-        .into_iter()
-        .map(|(set, coupons)| (set, HashSet::from_iter(coupons.into_iter())))
+    mut reference: Vec<i64>,
+) -> anyhow::Result<SetData> {
+    let mut result: SetData = reference
+        .iter()
+        .map(|set_id| (*set_id, BTreeSet::new()))
         .collect();
 
     let client = reqwest::Client::new();
 
     let mut pct = 0.1;
+    let mut gotten = 0;
     let mut total_errors = 0;
 
     loop {
-        if data.is_empty() {
-            tracing::info!("Data is empty. Stopping...");
+        if reference.is_empty() {
+            tracing::info!(id, "Reference is empty. Stopping...");
             break;
         }
 
-        // TODO add total_errors to env var
-        if total_errors > 1000 {
-            tracing::error!("TOO MANY ERRORS!");
-            return Ok(data);
+        // There should be only one error per set
+        if total_errors > config.total_sets {
+            tracing::error!(id, "TOO MANY ERRORS!");
+            return Ok(result);
         }
 
-        // Randomly select a coupon set to extract from
+        // Randomly select a coupon set to fetch from
         let idx = {
             let mut rng = rand::thread_rng();
-            rng.gen_range(0..data.len())
+            rng.gen_range(0..reference.len())
         };
 
-        let selected = &mut data[idx];
-        let set_id = selected.0.id;
+        let selected_id = reference[idx];
 
-        if selected.1.is_empty() {
-            let _ = data.remove(idx);
-            continue;
-        }
-
-        let coupon = match fetch_coupon(&client, selected.0.id).await? {
+        let coupon = match fetch_coupon(&client, selected_id).await? {
             FetchResult::Coupon(coupon) => coupon,
             FetchResult::StatusError(status) => {
                 total_errors += 1;
 
-                if status == 404 {
-                    continue; // TODO should never happen
+                if status == StatusCode::NOT_FOUND {
+                    // Set should be exhausted, remove it from reference
+                    let set_id = reference.remove(idx);
+                    tracing::info!(id, "Set exhausted: {}", set_id);
+                    continue;
                 }
 
+                tracing::error!(id, "Status code error: {}", status);
                 break;
             }
         };
 
-        selected.1.remove(&coupon.id.to_string());
+        gotten += 1;
+        let coupon_id = coupon.id.to_string();
 
-        let rem = data.iter().fold(0, |acc, (_, coupons)| acc + coupons.len());
-        if (rem as f64 / total_coupons as f64) <= (1.0 - pct) {
-            tracing::info!("[{}] Processed {:.2}% ({} left)", set_id, pct * 100.0, rem);
+        result
+            .entry(selected_id)
+            .and_modify(|value| {
+                value.insert(coupon_id.clone());
+            })
+            .or_insert(BTreeSet::from_iter(vec![coupon_id].into_iter()));
 
+        if (gotten as f64 / config.total_uploads as f64) >= pct {
+            tracing::info!(id, "Approximately fetched {:.2}% of coupons", pct * 100.0);
             pct += 0.1;
         }
 
-        // // Random timeout to simulate "real world usage" :D
+        // Random timeout to simulate "real world usage"
         if config.timeout > 0 {
             let millis = {
                 let mut rng = rand::thread_rng();
@@ -151,5 +139,5 @@ async fn fetch_all(
         }
     }
 
-    Ok(data)
+    Ok(result)
 }
