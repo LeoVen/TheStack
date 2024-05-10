@@ -31,7 +31,7 @@ curl -s --request POST \
   --url http://localhost:8080/admin/realms \
   --header "authorization: bearer ${ACCESS_TOKEN}" \
   --header 'content-type: application/json' \
-  --data "{\"realm\": \"${REALM_NAME}\"}"
+  --data "{\"realm\": \"${REALM_NAME}\", \"enabled\": \"true\"}"
 
 { echo "Creating User \"${USER_NAME}\""; } 2> /dev/null
 
@@ -40,6 +40,6 @@ curl -s --request POST \
   --header "authorization: bearer ${ACCESS_TOKEN}" \
   --header 'content-type: application/json' \
   --header 'user-agent: vscode-restclient' \
-  --data "{\"firstName\": \"S2S User\",\"username\": \"${USER_NAME}\",\"email\": \"thestack@mail.com\",\"enabled\": \"true\",\"credentials\": [{\"type\": \"password\",\"value\": \"${USER_PASSWORD}\",\"temporary\": \"false\"}]}"
+  --data "{\"firstName\": \"S2S User\", \"lastName\": \"Auto Generated\",\"username\": \"${USER_NAME}\",\"email\": \"thestack@mail.com\", \"emailVerified\": \"true\",\"enabled\": \"true\",\"credentials\": [{\"type\": \"password\",\"value\": \"${USER_PASSWORD}\",\"temporary\": \"false\"}]}"
 
 { echo "Keycloak setup done"; } 2> /dev/null

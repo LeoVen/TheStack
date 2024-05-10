@@ -110,6 +110,7 @@ Content-Type: application/json
     "firstName": "S2S User",
     "username": "s2s_user",
     "email": "thestack@mail.com",
+    "emailVerified": "true",
     "enabled": "true",
     "credentials": [
         {
@@ -119,3 +120,10 @@ Content-Type: application/json
         }
     ]
 }
+
+# And then request credentials
+
+POST http://localhost:8080/realms/thestack/protocol/openid-connect/token
+Content-Type: application/x-www-form-urlencoded
+
+username=s2s_user&password=pass&client_id=admin-cli&grant_type=password

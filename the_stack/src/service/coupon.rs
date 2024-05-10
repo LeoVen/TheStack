@@ -13,8 +13,7 @@ use crate::error::service::ServiceResult;
 use crate::metrics::Metrics;
 use crate::model::coupon::Coupon;
 use crate::model::coupon::CouponSet;
-
-use super::BatchInsertConfig;
+use crate::service::BatchInsertConfig;
 
 pub struct CouponService {
     repo: CouponRepository,

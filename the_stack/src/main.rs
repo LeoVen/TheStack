@@ -1,4 +1,5 @@
-use the_stack::{api::AppState, service::BatchInsertConfig};
+use the_stack::api::AppState;
+use the_stack::service::BatchInsertConfig;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
