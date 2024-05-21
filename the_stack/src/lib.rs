@@ -1,10 +1,10 @@
 pub mod api;
+pub mod auth;
 pub mod cache;
 pub mod database;
 pub mod error;
 pub mod hash;
 pub mod jobs;
-pub mod jwt;
 pub mod metrics;
 pub mod model;
 pub mod service;

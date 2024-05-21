@@ -1,5 +1,6 @@
 use std::fmt::Display;
 
+use anyhow::anyhow;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::response::Response;
@@ -15,7 +16,19 @@ pub enum ApiError {
     Conflict(anyhow::Error, String),
     NotFound(String),
     BadRequest(String),
-    Unauthorized,
+    Unauthorized {
+        message: String,
+        error: Option<anyhow::Error>,
+    },
+}
+
+impl ApiError {
+    pub fn default_unauthorized() -> Self {
+        Self::Unauthorized {
+            message: "Unauthorized".to_string(),
+            error: None,
+        }
+    }
 }
 
 #[derive(Serialize)]
@@ -38,7 +51,14 @@ impl Display for ApiError {
             ApiError::Internal(err) => write!(f, "ApiError: Internal: {}", err),
             ApiError::NotFound(message) => write!(f, "ApiError: NotFound: {}", message),
             ApiError::BadRequest(message) => write!(f, "ApiError: BadRequest: {}", message),
-            ApiError::Unauthorized => write!(f, "ApiError: Unauthorized"),
+            ApiError::Unauthorized { message, error } => {
+                write!(
+                    f,
+                    "ApiError: Unauthorized: {}: {}",
+                    message,
+                    error.as_ref().unwrap_or(&anyhow!("Error!"))
+                )
+            }
             ApiError::Conflict(err, _) => write!(f, "ApiError: Conflict: {}", err),
         }
     }
@@ -72,15 +92,16 @@ impl IntoResponse for ApiError {
                 )
                     .into_response()
             }
-            ApiError::Unauthorized => {
-                tracing::info!("Unauthorized");
+            ApiError::Unauthorized { message, error } => {
+                let error = error.unwrap_or(anyhow!("Error")).to_string();
+                tracing::info!(message, error, "Unauthorized");
 
                 (StatusCode::UNAUTHORIZED, ResponseBody::from("Unauthorized")).into_response()
             }
             ApiError::Conflict(error, constraint) => {
                 let error = error.to_string();
 
-                tracing::info!(error = error, "Conflict on {}", constraint);
+                tracing::info!(error, "Conflict on {}", constraint);
 
                 (
                     StatusCode::CONFLICT,
@@ -98,7 +119,7 @@ impl From<ServiceError> for ApiError {
         match err {
             ServiceError::NotFound => ApiError::NotFound("Not Found".to_string()),
             ServiceError::Internal(err) => ApiError::Internal(err),
-            ServiceError::Unauthorized => ApiError::Unauthorized,
+            ServiceError::Unauthorized => ApiError::default_unauthorized(),
             ServiceError::Conflict(err, conflict) => ApiError::Conflict(err, conflict),
         }
     }

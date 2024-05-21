@@ -16,6 +16,7 @@ use anyhow::Result;
 use axum::body::Body;
 use axum::extract::MatchedPath;
 use axum::http::Request;
+use axum::middleware;
 use axum::response::Response;
 use axum::Router;
 use redis::aio::MultiplexedConnection;
@@ -26,12 +27,12 @@ use sqlx::Postgres;
 use tower_cookies::CookieManagerLayer;
 use tower_http::trace::TraceLayer;
 
+use crate::auth::jwt::JWTService;
+use crate::auth::keycloak::KeycloakAuthMiddleware;
+use crate::auth::userlogin::UserAuthMiddleware;
 use crate::cache::lock::DistributedLock;
-use crate::jwt::JWTService;
 use crate::metrics::Metrics;
 use crate::service::BatchInsertConfig;
-
-pub static AUTH_COOKIE: &str = "auth-token";
 
 #[derive(Serialize, Deserialize, Debug)]
 struct AxumApiConfig {
@@ -45,9 +46,11 @@ pub struct AppState {
     pub cache: MultiplexedConnection,
     pub metrics: Metrics,
     pub timeout: Arc<Mutex<u64>>,
-    pub jwt_service: JWTService,
     pub lock: DistributedLock,
     pub batch_config: BatchInsertConfig,
+    pub jwt_service: JWTService,
+    pub user_auth: UserAuthMiddleware,
+    pub kc_auth: KeycloakAuthMiddleware,
 }
 
 #[tracing::instrument(skip(ctx))]
@@ -93,8 +96,17 @@ pub async fn setup(env: &str, ctx: AppState) -> Result<()> {
             },
         );
 
-    let coupons = coupon::router(ctx.clone()).layer(trace_layer.clone());
-    let files = files::router();
+    let coupons = coupon::router(ctx.clone())
+        .layer(trace_layer.clone())
+        .route_layer(middleware::from_fn_with_state(
+            ctx.kc_auth.clone(),
+            KeycloakAuthMiddleware::authenticate,
+        ))
+        .layer(cookies.clone());
+    let files = files::router().route_layer(middleware::from_fn_with_state(
+        ctx.user_auth.clone(),
+        UserAuthMiddleware::auth_middleware,
+    ));
     let metrics = metrics::router();
     let userlogin = userlogin::router(ctx.clone())
         .layer(trace_layer.clone())

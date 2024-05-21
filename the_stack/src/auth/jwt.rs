@@ -6,8 +6,12 @@ use jsonwebtoken::Algorithm;
 use jsonwebtoken::DecodingKey;
 use jsonwebtoken::EncodingKey;
 use jsonwebtoken::Header;
+use jsonwebtoken::TokenData;
+use jsonwebtoken::Validation;
 use serde::Deserialize;
 use serde::Serialize;
+
+const ALGORITHM: Algorithm = Algorithm::RS256;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct JWTConfigEnv {
@@ -45,9 +49,9 @@ pub fn setup() -> anyhow::Result<JWTService> {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-struct Claims {
-    sub: String,
-    exp: u64,
+pub struct Claims {
+    pub sub: String,
+    pub exp: u64,
 }
 
 impl JWTService {
@@ -61,16 +65,17 @@ impl JWTService {
                 + self.token_expiry,
         };
 
-        let token = jsonwebtoken::encode(&Header::new(Algorithm::RS256), &claims, &self.encoding)
+        let token = jsonwebtoken::encode(&Header::new(ALGORITHM), &claims, &self.encoding)
             .context("Failed to generate token")?;
 
         Ok(token)
     }
 
-    pub fn decode_token(&self, token: &str) -> anyhow::Result<()> {
-        // TODO
-        let _ = self.decoding;
-        let _ = token;
-        todo!()
+    pub fn decode_token(&self, token: &str) -> anyhow::Result<TokenData<Claims>> {
+        let mut validation = Validation::new(ALGORITHM);
+        validation.set_required_spec_claims(&["sub", "exp"]);
+        let result = jsonwebtoken::decode::<Claims>(token, &self.decoding, &validation)?;
+
+        Ok(result)
     }
 }

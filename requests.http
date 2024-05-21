@@ -127,3 +127,7 @@ POST http://localhost:8080/realms/thestack/protocol/openid-connect/token
 Content-Type: application/x-www-form-urlencoded
 
 username=s2s_user&password=pass&client_id=admin-cli&grant_type=password
+
+# Keycloak public keys
+
+GET http://localhost:8080/realms/thestack/protocol/openid-connect/certs
