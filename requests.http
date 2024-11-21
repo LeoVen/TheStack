@@ -20,7 +20,7 @@ Content-Type: application/json
     "password": "123pass123"
 }
 
-## Login with User
+### Login with User
 
 POST http://localhost:3000/userlogin/login
 Content-Type: application/json
@@ -33,7 +33,7 @@ Content-Type: application/json
 
 #################### Coupon
 
-# Create coupon set
+### Create coupon set
 
 POST http://localhost:3000/coupon_set
 Content-Type: application/json
@@ -42,11 +42,11 @@ Content-Type: application/json
     "name": "Campaign 1"
 }
 
-# Get single coupon
+### Get single coupon
 
 GET http://localhost:3000/coupon_set/1/coupon
 
-# Upload coupons
+### Upload coupons
 
 POST http://localhost:3000/coupon_set/1/upload
 Content-Type: application/json
@@ -64,7 +64,7 @@ Content-Type: application/json
     "7bb7684f-934b-4125-9577-29dabec9b071"
 ]
 
-# All set status
+### All set status
 GET http://localhost:3000/coupon_set/status
 
 
@@ -82,14 +82,14 @@ PUT http://localhost:3000/worker/timeout_seconds/120
 
 # https://www.keycloak.org/docs-api/latest/rest-api/index.html
 
-# Get token for admin use
+### Get token for admin use
 
 POST http://localhost:8080/realms/master/protocol/openid-connect/token
 Content-Type: application/x-www-form-urlencoded
 
 username=admin&password=admin&client_id=admin-cli&grant_type=password
 
-# Create a realm
+### Create a realm
 
 POST http://localhost:8080/admin/realms
 Authorization: bearer XX.XX.XX
@@ -100,7 +100,7 @@ Content-Type: application/json
     "enabled": true
 }
 
-# Create a user for a realm
+### Create a user for a realm
 
 POST http://localhost:8080/admin/realms/thestack/users
 Authorization: bearer XX.XX.XX
@@ -121,13 +121,13 @@ Content-Type: application/json
     ]
 }
 
-# And then request credentials
+### And then request credentials
 
 POST http://localhost:8080/realms/thestack/protocol/openid-connect/token
 Content-Type: application/x-www-form-urlencoded
 
 username=s2s_user&password=pass&client_id=admin-cli&grant_type=password
 
-# Keycloak public keys
+### Keycloak public keys
 
 GET http://localhost:8080/realms/thestack/protocol/openid-connect/certs

@@ -44,7 +44,7 @@ gen_rsa:
 	. ./scripts/create_rsa_kp.sh
 
 deps:
-	sudo apt install -y postgresql-client redis-tools curl jq sed openssh-client libssl-dev pkg-config
+	brew install redis libpq curl jq openssh openssl pkg-config
 	cargo install sqlx-cli cargo-watch cargo-expand tokio-console
 	rustup install nightly
 	chmod -R +x ./scripts

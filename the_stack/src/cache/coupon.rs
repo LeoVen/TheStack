@@ -28,7 +28,8 @@ impl CouponCache {
 
         tracing::info!("batch inserting {} coupons", coupons.len());
 
-        self.conn
+        let _: () = self
+            .conn
             .lpush(
                 CouponSet::set_key(set_id),
                 coupons

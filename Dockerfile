@@ -1,4 +1,4 @@
-FROM rust:1.76.0 AS chef
+FROM rust:1.82 AS chef
 
 RUN cargo install cargo-chef
 WORKDIR /app
@@ -18,6 +18,10 @@ RUN cargo build --release --bin ${BINARY_NAME}
 
 # We do not need the Rust toolchain to run the binary!
 FROM debian:bookworm-slim AS runtime
+
+RUN apt-get update -y
+RUN apt-get install -y openssl
+
 ARG BINARY_NAME
 WORKDIR /app
 COPY --from=builder /app/target/release/${BINARY_NAME} /usr/local/bin/rust_program

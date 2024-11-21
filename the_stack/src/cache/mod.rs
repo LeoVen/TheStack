@@ -37,6 +37,7 @@ pub async fn setup(env: &str) -> Result<(MultiplexedConnection, lock::Distribute
             db: config.database,
             username: None,
             password: None,
+            protocol: redis::ProtocolVersion::RESP3,
         },
     })
     .context("Failed to setup redis connection manager")?;
