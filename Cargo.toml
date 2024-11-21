@@ -1,16 +1,16 @@
 [workspace]
 resolver = "2"
-members = ["the_stack", "the_stack_client", "the_stack_tester"]
+members = ["the_stack", "the_stack_client", "the_stack_lb", "the_stack_tester"]
 
 [workspace.dependencies]
 anyhow = "1.0.93"
 argon2 = "0.5.3"
 axum = "0.7.9"
-console-subscriber = "0.2.0" # tokio
+console-subscriber = "0.4.1" # tokio
 chrono = { version = "0.4.38", features = ["serde"] }
 dotenvy = "0.15.7"
 envy = "0.4.2"
-itertools = "0.12.1"
+itertools = "0.13.0"
 jsonwebtoken = "9.3.0"
 password-hash = { version = "0.5.0", features = ["std"] }
 prometheus = "0.13.4"
@@ -36,7 +36,7 @@ sqlx = { version = "0.8.2", features = [
 tokio = { version = "1.41.1", features = ["full", "tracing"] }
 tokio-retry = "0.3.0"
 tower-cookies = "0.10.0"
-tower-http = { version = "0.5.2", features = ["trace", "cors", "fs", "auth"] }
+tower-http = { version = "0.6.2", features = ["trace", "cors", "fs", "auth"] }
 tracing = "0.1.40"
 tracing-subscriber = { version = "0.3.18", features = ["json"] }
 uuid = { version = "1.11.0", features = ["serde", "v4"] }
