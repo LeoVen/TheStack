@@ -1,24 +1,25 @@
 [package]
+edition = "2021"
 name = "the_stack_tester"
 version = "0.1.0"
-edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-the_stack = { path = "../the_stack" }
+anyhow = { workspace = true }
+chrono = { workspace = true }
+console-subscriber = { workspace = true }
 dotenvy = { workspace = true }
 envy = { workspace = true }
-console-subscriber = { workspace = true }
 itertools = { workspace = true }
-tracing = { workspace = true }
-tracing-subscriber = { workspace = true }
-serde_json = { workspace = true }
-anyhow = { workspace = true }
-tokio = { workspace = true }
 rand = { workspace = true }
 reqwest = { workspace = true }
 serde = { workspace = true }
+serde_json = { workspace = true }
+the_stack = { path = "../the_stack" }
+tokio = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
 uuid = { workspace = true }
 
 [[bin]]

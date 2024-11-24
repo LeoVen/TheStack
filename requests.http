@@ -45,11 +45,13 @@ Content-Type: application/json
 ### Get single coupon
 
 GET http://localhost:3000/coupon_set/1/coupon
+Authorization: Bearer
 
 ### Upload coupons
 
 POST http://localhost:3000/coupon_set/1/upload
 Content-Type: application/json
+Authorization: Bearer
 
 [
     "39600ed3-76e5-4237-b885-0c496148c831",

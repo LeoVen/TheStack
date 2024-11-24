@@ -3,6 +3,7 @@ use std::collections::HashSet;
 use the_stack::model::coupon::CouponSet;
 use tokio::task::JoinSet;
 
+use crate::auth::CredentialsManager;
 use crate::fetch::fetch_coupon;
 use crate::fetch::FetchResult;
 use crate::TesterConfig;
@@ -11,12 +12,14 @@ use crate::TesterConfig;
 pub async fn run_benchmark(
     config: TesterConfig,
     sets: Vec<(CouponSet, Vec<String>)>,
+    cred_manager: CredentialsManager,
 ) -> anyhow::Result<()> {
     let mut js = JoinSet::new();
 
     for set in sets.into_iter() {
         let config = config.clone();
-        js.spawn(async { fetch_all(config, set).await });
+        let cred_manager = cred_manager.clone();
+        js.spawn(async { fetch_all(config, set, cred_manager).await });
     }
 
     while let Some(result) = js.join_next().await {
@@ -33,7 +36,11 @@ pub async fn run_benchmark(
 }
 
 #[tracing::instrument(skip_all)]
-async fn fetch_all(config: TesterConfig, data: (CouponSet, Vec<String>)) -> anyhow::Result<()> {
+async fn fetch_all(
+    config: TesterConfig,
+    data: (CouponSet, Vec<String>),
+    mut cred_manager: CredentialsManager,
+) -> anyhow::Result<()> {
     let set = data.0;
     let coupons = data.1;
 
@@ -51,7 +58,9 @@ async fn fetch_all(config: TesterConfig, data: (CouponSet, Vec<String>)) -> anyh
     let mut pct = 0.1;
 
     for _ in 0..coupons.len() {
-        let FetchResult::Coupon(coupon) = fetch_coupon(&client, set.id).await? else {
+        let FetchResult::Coupon(coupon) =
+            fetch_coupon(&client, set.id, &cred_manager.kc_token().await?).await?
+        else {
             continue;
         };
 

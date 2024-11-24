@@ -1,3 +1,4 @@
+pub mod auth;
 pub mod bench;
 pub mod fetch;
 pub mod runner;
@@ -7,6 +8,7 @@ use std::net::Ipv4Addr;
 use std::time::Duration;
 
 use anyhow::Context;
+use auth::CredentialsManager;
 use serde::Deserialize;
 use serde::Serialize;
 use tracing_subscriber::layer::SubscriberExt;
@@ -17,7 +19,7 @@ use crate::upload::create_set;
 use crate::upload::upload_coupons;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-enum TesterMode {
+pub enum TesterMode {
     #[serde(rename(deserialize = "benchmark"))]
     Benchmark,
     #[serde(rename(deserialize = "simulation"))]
@@ -25,13 +27,19 @@ enum TesterMode {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-struct TesterConfig {
+pub struct TesterConfig {
     #[serde(rename(deserialize = "tester_total_uploads"))]
     pub total_uploads: usize,
     #[serde(rename(deserialize = "tester_total_sets"))]
     pub total_sets: usize,
     #[serde(rename(deserialize = "tester_wait_secs"))]
     pub wait_secs: u64,
+    #[serde(rename(deserialize = "tester_user_name"))]
+    pub username: String,
+    #[serde(rename(deserialize = "tester_user_password"))]
+    pub password: String,
+    #[serde(rename(deserialize = "tester_kc_auth_endpoint"))]
+    pub kc_auth_endpoint: String,
     #[serde(rename(deserialize = "tester_timeout_milliseconds"))]
     pub timeout: u64,
     #[serde(rename(deserialize = "tester_mode"))]
@@ -62,9 +70,23 @@ async fn main() -> anyhow::Result<()> {
     let client = reqwest::Client::new();
     let mut sets = vec![];
 
+    let mut cred_manager = CredentialsManager::new(&config).await?;
+
     for i in 0..config.total_sets {
-        let set = create_set(&client, format!("Campaign {}", i)).await?;
-        let coupons = upload_coupons(&client, set.id, config.total_uploads).await?;
+        let set = create_set(
+            &client,
+            &cred_manager.kc_token().await?,
+            format!("Campaign {}", i),
+        )
+        .await?;
+
+        let coupons = upload_coupons(
+            &client,
+            &cred_manager.kc_token().await?,
+            set.id,
+            config.total_uploads,
+        )
+        .await?;
 
         tracing::info!("Uploaded {} coupons to set {}", coupons.len(), set.id);
 
@@ -78,8 +100,8 @@ async fn main() -> anyhow::Result<()> {
     tokio::time::sleep(Duration::from_secs(config.wait_secs)).await;
 
     match config.mode {
-        TesterMode::Benchmark => bench::run_benchmark(config, sets).await?,
-        TesterMode::Simulation => runner::simulation(config, sets).await?,
+        TesterMode::Benchmark => bench::run_benchmark(config, sets, cred_manager.clone()).await?,
+        TesterMode::Simulation => runner::simulation(config, sets, cred_manager).await?,
     }
 
     Ok(())

@@ -7,6 +7,7 @@ use reqwest::StatusCode;
 use the_stack::model::coupon::CouponSet;
 use tokio::task::JoinSet;
 
+use crate::auth::CredentialsManager;
 use crate::fetch::fetch_coupon;
 use crate::fetch::FetchResult;
 use crate::TesterConfig;
@@ -17,6 +18,7 @@ type SetData = BTreeMap<i64, BTreeSet<String>>;
 pub async fn simulation(
     config: TesterConfig,
     sets: Vec<(CouponSet, Vec<String>)>,
+    cred_manager: CredentialsManager,
 ) -> anyhow::Result<()> {
     let reference: Vec<i64> = sets.iter().map(|set_data| set_data.0.id).collect();
     let set_data: SetData = sets.into_iter().fold(BTreeMap::new(), |mut acc, set| {
@@ -29,7 +31,8 @@ pub async fn simulation(
     for id in 0..config.total_sets {
         let config = config.clone();
         let reference = reference.clone();
-        js.spawn(async move { fetch_all(id, config, reference).await });
+        let cred_manager = cred_manager.clone();
+        js.spawn(async move { fetch_all(id, config, reference, cred_manager).await });
     }
 
     let mut merged_data: SetData = BTreeMap::new();
@@ -65,6 +68,7 @@ async fn fetch_all(
     id: usize,
     config: TesterConfig,
     mut reference: Vec<i64>,
+    mut cred_manager: CredentialsManager,
 ) -> anyhow::Result<SetData> {
     let mut result: SetData = reference
         .iter()
@@ -99,22 +103,23 @@ async fn fetch_all(
 
         let selected_id = reference[idx];
 
-        let coupon = match fetch_coupon(&client, selected_id).await? {
-            FetchResult::Coupon(coupon) => coupon,
-            FetchResult::StatusError(status) => {
-                total_errors += 1;
+        let coupon =
+            match fetch_coupon(&client, selected_id, &cred_manager.kc_token().await?).await? {
+                FetchResult::Coupon(coupon) => coupon,
+                FetchResult::StatusError(status) => {
+                    total_errors += 1;
 
-                if status == StatusCode::NOT_FOUND {
-                    // Set should be exhausted, remove it from reference
-                    let set_id = reference.remove(idx);
-                    tracing::info!(id, "Set exhausted: {}", set_id);
-                    continue;
+                    if status == StatusCode::NOT_FOUND {
+                        // Set should be exhausted, remove it from reference
+                        let set_id = reference.remove(idx);
+                        tracing::info!(id, "Set exhausted: {}", set_id);
+                        continue;
+                    }
+
+                    tracing::error!(id, "Status code error: {}", status);
+                    break;
                 }
-
-                tracing::error!(id, "Status code error: {}", status);
-                break;
-            }
-        };
+            };
 
         gotten += 1;
         let coupon_id = coupon.id.to_string();

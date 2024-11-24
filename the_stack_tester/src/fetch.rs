@@ -11,7 +11,11 @@ pub enum FetchResult {
     StatusError(StatusCode),
 }
 
-pub async fn fetch_coupon(client: &Client, set_id: i64) -> anyhow::Result<FetchResult> {
+pub async fn fetch_coupon(
+    client: &Client,
+    set_id: i64,
+    token: &str,
+) -> anyhow::Result<FetchResult> {
     let url = Url::from_str(&format!(
         "http://localhost:3000/coupon_set/{}/coupon",
         set_id
@@ -19,6 +23,7 @@ pub async fn fetch_coupon(client: &Client, set_id: i64) -> anyhow::Result<FetchR
 
     let response = client
         .get(url.clone())
+        .bearer_auth(token)
         .send()
         .await
         .context(format!("sending request for set id {}", set_id))?;
